@@ -1,0 +1,49 @@
+{
+    "name": "phper666/JwtAuth",
+    "description": "jwt-auth",
+    "license": "MIT",
+    "keywords": [
+        "php",
+        "swoole",
+        "hyperf",
+        "jwt-auth"
+    ],
+    "support": {
+    },
+    "require": {
+        "php": ">=7.2",
+        "ext-swoole": ">=4.3",
+        "firebase/php-jwt": "^5.0"
+    },
+    "require-dev": {},
+    "suggest": {
+    },
+    "autoload": {
+        "files": [
+        ],
+        "psr-4": {
+            "Phper666\\JwtAuth\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0-dev"
+        },
+        "phper666": {
+            "config": "Phper666\\JwtAuth\\ConfigProvider"
+        }
+    },
+    "bin": [
+    ],
+    "scripts": {
+        "cs-fix": "php-cs-fixer fix $1",
+        "test": "phpunit --colors=always"
+    }
+}
