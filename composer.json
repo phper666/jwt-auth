@@ -1,49 +1,55 @@
 {
     "name": "phper666/jwt-auth",
-    "description": "jwt-auth",
+    "type": "library",
     "license": "MIT",
     "keywords": [
         "php",
-        "swoole",
-        "hyperf",
-        "jwt-auth"
+        "hyperf"
     ],
-    "support": {
-    },
-    "require": {
-        "php": ">=7.2",
-        "ext-swoole": ">=4.3",
-        "firebase/php-jwt": "^5.0"
-    },
-    "require-dev": {},
-    "suggest": {
-    },
+    "authors": [
+        {
+            "name": "Li Yuzhao",
+            "email": "562405704@qq.com",
+            "homepage": "http://www.liyuzhao.cn",
+            "role": "Developer"
+        }
+    ],
+    "description": "jwt-auth Component",
     "autoload": {
-        "files": [
-        ],
         "psr-4": {
-            "Phper666\\JwtAuth\\": "src"
+            "Phper666\\JwtAuth\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
+            "HyperfTest\\": "tests"
         }
+    },
+    "require": {
+        "php": ">=7.2",
+        "ext-swoole": ">=4.3",
+        "hyperf/utils": "1.0.*",
+        "hyperf/framework": "1.0.*",
+        "hyperf/di": "1.0.*",
+        "firebase/php-jwt": "^5.0"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^2.14",
+        "hyperf/testing": "1.0.*",
+        "phpstan/phpstan": "^0.10.5",
+        "swoft/swoole-ide-helper": "dev-master"
     },
     "config": {
         "sort-packages": true
     },
+    "scripts": {
+        "test": "co-phpunit -c phpunit.xml --colors=always",
+        "analyze": "phpstan analyse --memory-limit 300M -l 0 ./src",
+        "cs-fix": "php-cs-fixer fix $1"
+    },
     "extra": {
-        "branch-alias": {
-            "dev-master": "1.0-dev"
-        },
-        "phper666": {
+        "hyperf": {
             "config": "Phper666\\JwtAuth\\ConfigProvider"
         }
-    },
-    "bin": [
-    ],
-    "scripts": {
-        "cs-fix": "php-cs-fixer fix $1",
-        "test": "phpunit --colors=always"
     }
 }
