@@ -13,7 +13,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Phper666\JwtAuth\Jwt;
-use Phper666\JwtAuth\Exception\TokenException;
+use Phper666\JwtAuth\Exception\TokenValidException;
 
 class JwtAuthMiddleware implements MiddlewareInterface
 {
@@ -50,6 +50,6 @@ class JwtAuthMiddleware implements MiddlewareInterface
             return $handler->handle($request);
         }
 
-        throw new TokenException('Token authentication does not pass', 401);
+        throw new TokenValidException('Token authentication does not pass', 401);
     }
 }

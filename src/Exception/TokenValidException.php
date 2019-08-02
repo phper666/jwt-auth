@@ -8,7 +8,7 @@
 
 namespace Phper666\JwtAuth\Exception;
 
-class TokenException extends \RuntimeException
+class TokenValidException extends \RuntimeException
 {
 
 }

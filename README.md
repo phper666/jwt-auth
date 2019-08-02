@@ -111,3 +111,5 @@ Authorization  Bearer token
     }
 }
 ```
+##### 10、建议
+目前jwt抛出的异常目前只有一种类型Phper666\JwtAuth\Exception\TokenValidException,该异常为token验证失败的异常，会抛出401，最好你们自己在项目异常重新返回错误信息
