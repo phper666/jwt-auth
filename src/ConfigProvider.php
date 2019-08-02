@@ -26,6 +26,14 @@ class ConfigProvider
                     __DIR__,
                 ],
             ],
+            'publish' => [
+                [
+                    'id' => 'jwt',
+                    'description' => 'jwt-auth',
+                    'source' => __DIR__ . '/../publish/jwt.php',
+                    'destination' => BASE_PATH . '/config/autoload/jwt.php',
+                ],
+            ],
         ];
     }
 }
