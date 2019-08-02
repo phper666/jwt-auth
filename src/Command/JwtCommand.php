@@ -1,14 +1,6 @@
 <?php
 
 declare(strict_types=1);
-/**
- * This file is part of Hyperf.
- *
- * @link     https://www.hyperf.io
- * @document https://doc.hyperf.io
- * @contact  group@hyperf.io
- * @license  https://github.com/hyperf-cloud/hyperf/blob/master/LICENSE
- */
 
 namespace Phper666\JwtAuth\Command;
 
@@ -31,7 +23,7 @@ class JwtCommand extends HyperfCommand
 
     public function handle()
     {
-        // 从 $input 获取 name 参数
+        // 从 $input 获取 config 参数
         $argument = $this->input->getOption('config');
         if ($argument) {
             $this->copySource(__DIR__ . '/../../publish/jwt.php', BASE_PATH . '/config/autoload/jwt.php');
