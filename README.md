@@ -1,4 +1,4 @@
-### 基于hyperf(https://doc.hyperf.io/#/zh/README)框架的jwt鉴权(json web token)组件。
+### 基于hyperf(https://doc.hyperf.io/#/zh/README) 框架的jwt鉴权(json web token)组件。
 ### 采用基于https://github.com/lcobucci/jwt/tree/3.3 进行封装。
 ### 使用：
 ##### 1、拉取依赖 
