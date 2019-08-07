@@ -9,8 +9,8 @@ return [
     # 单点登录自定义数据中必须存在uid的键值
     'sso_key' => 'uid',
 
-    # 非对称加密使用字符串
-    'secret' => env('JWT_SECRET'),
+    # 非对称加密使用字符串,请使用自己加密的字符串
+    'secret' => env('JWT_SECRET', 'phper666'),
 
     /*
      * JWT 权限keys
@@ -26,12 +26,12 @@ return [
     ],
 
     # token过期时间，单位为秒
-    'ttl' => env('JWT_TTL', 3600),
+    'ttl' => env('JWT_TTL', 7200),
 
     # jwt的hearder加密算法
     'alg' => env('JWT_ALG', 'HS256'),
 
-    # 是否开启黑名单，单点登录和多点登录的注销、刷新使原token失效，必须要开启黑名单，目前黑名单缓存只支持redis
+    # 是否开启黑名单，单点登录和多点登录的注销、刷新使原token失效，必须要开启黑名单，目前黑名单缓存只支持hyperf缓存驱动
     'blacklist_enabled' => env('JWT_BLACKLIST_ENABLED', true),
 
     # 黑名单的宽限时间 单位为：秒，注意：如果使用单点登录，该宽限时间无效
