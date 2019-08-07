@@ -10,6 +10,7 @@ class ConfigProvider
     {
         return [
             'dependencies' => [
+
             ],
             'commands' => [
             ],

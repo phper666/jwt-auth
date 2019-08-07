@@ -41,11 +41,10 @@ class JwtAuthMiddleware implements MiddlewareInterface
             $token = ucfirst($token);
             $arr = explode($this->prefix . ' ', $token);
             $token = $arr[1] ?? '';
-            if (strlen($token) > 0 && $this->jwt->checkToken($token)) {
+            if (strlen($token) > 0 && $this->jwt->checkToken()) {
                 $isValidToken = true;
             }
         }
-
         if ($isValidToken) {
             return $handler->handle($request);
         }
