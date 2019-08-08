@@ -208,4 +208,4 @@ class IndexController extends Controller
 }
 ```
 ##### 11、建议
-目前jwt抛出的异常目前只有一种类型Phper666\JwtAuth\Exception\TokenValidException,该异常为token验证失败的异常，会抛出401，最好你们自己在项目异常重新返回错误信息
+目前jwt抛出的异常目前有两种类型Phper666\JwtAuth\Exception\TokenValidException和Phper666\JwtAuth\Exception\JWTException,TokenValidException异常为token验证失败的异常，会抛出401,JWTException异常会抛出500，最好你们自己在项目异常重新返回错误信息
