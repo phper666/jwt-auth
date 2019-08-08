@@ -2,7 +2,7 @@
 ### 采用基于https://github.com/lcobucci/jwt/tree/3.3 进行封装。
 ### 说明：
 ```shell
-jwt-auth1.0.1支持单点登录、多点登录、支持注销token(token会失效)、支持刷新token  
+jwt-auth支持单点登录、多点登录、支持注销token(token会失效)、支持刷新token  
   
 单点登录：只会有一个token生效，一旦刷新token，前面生成的token都会失效，一般以用户id来做区分  
   
