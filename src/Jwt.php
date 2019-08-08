@@ -31,9 +31,10 @@ class Jwt
     /**
      * 生成token
      * @param array $claims
+     * @param bool $isInsertSsoBlack 是否把单点登录生成的token加入黑名单
      * @return Token
      */
-    public function getToken(array $claims)
+    public function getToken(array $claims, $isInsertSsoBlack = true)
     {
         if ($this->loginType == 'mpop') { // 多点登录
             $uniqid = uniqid();
@@ -58,6 +59,10 @@ class Jwt
         }
 
         $token = $builder->getToken($signer, $this->getKey()); // Retrieves the generated token
+
+        if ($this->loginType == 'sso' && $isInsertSsoBlack) { // 单点登录要把所有的以前生成的token都失效
+            $this->blacklist->add($token);
+        }
 
         return $token; // 返回的是token对象，使用强转换会自动转换成token字符串。Token对象采用了__toString魔术方法
     }
