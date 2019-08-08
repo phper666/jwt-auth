@@ -1,5 +1,6 @@
 ### 基于hyperf(https://doc.hyperf.io/#/zh/README) 框架的jwt鉴权(json web token)组件。
 ### 采用基于https://github.com/lcobucci/jwt/tree/3.3 进行封装。
+### 黑名单的设置参考了这篇文章https://learnku.com/articles/17883
 ### 说明：
 ```shell
 jwt-auth支持单点登录、多点登录、支持注销token(token会失效)、支持刷新token  
