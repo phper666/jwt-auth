@@ -3,12 +3,18 @@
 ### 说明：
 ```shell
 jwt-auth1.0.1支持单点登录、多点登录、支持注销token(token会失效)、支持刷新token  
+  
 单点登录：只会有一个token生效，一旦刷新token，前面生成的token都会失效，一般以用户id来做区分  
+  
 多点登录：token不做限制，一旦刷新token，则当前token会失效  
+  
 注意：使用单点登录或者多点登录时，必须要开启黑名单，并且使用hyperf的缓存(建议使用redis缓存)。如果不开启黑名单，无法使token失效，生成的token会在有效时间内都可以使用(未更换证书或者secret)。  
-单点登录原理：JWT有七个默认字段供选择。单点登录主要用到jti默认字段，jti字段的值默认为用户id。当生成token时，getToken方法有一个$isInsertSsoBlack参数来控制是否会把前面生成的token都失效，默认是失效的，如果想不失效，设置为false即可。但是如果是调用refreshToken来刷新token或者调用logout注销token，默认前面生成的token都会失效。
+  
+单点登录原理：JWT有七个默认字段供选择。单点登录主要用到jti默认字段，jti字段的值默认为用户id。当生成token时，getToken方法有一个$isInsertSsoBlack参数来控制是否会把前面生成的token都失效，默认是失效的，如果想不失效，设置为false即可。但是如果是调用refreshToken来刷新token或者调用logout注销token，默认前面生成的token都会失效。  
 jwt的生成的token加入黑名单时，会把用户id作为缓存的键，当前时间作为值，配置文件中的blacklist_cache_ttl作为缓存的失效时间。每次生成token或者刷新token时，会先从token中拿到签发时间和jti的值，根据jti值找到对应的缓存拿到时间，拿到时间后跟token的签发时间对比，如果签发时间小于等于拿到的时间值，则token判断为失效的。（jti在单点登录中，存的值是用户id）  
+  
 多点登录原理：多点登录跟单点登录差不多，唯一不同的是jti的值不是用户id，而是一个唯一字符串，每次调用refreshToken来刷新token或者调用logout注销token会默认把请求头中的token加入到黑名单，而不会影响到别的token  
+  
 token不做限制原理：token不做限制，在token有效的时间内都能使用，你只要把配置文件中的blacklist_enabled设置为false即可，即为关闭黑名单功能
 
 ```
