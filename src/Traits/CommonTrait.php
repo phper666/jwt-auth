@@ -234,7 +234,7 @@ trait CommonTrait
      */
     public function getTTL()
     {
-        return $this->ttl;
+        return (int)$this->ttl;
     }
 
     public function __get($name)

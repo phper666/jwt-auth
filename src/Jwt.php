@@ -12,6 +12,7 @@ use Lcobucci\JWT\Token;
 use Phper666\JwtAuth\Exception\TokenValidException;
 use Phper666\JwtAuth\Exception\JWTException;
 use Phper666\JwtAuth\Traits\CommonTrait;
+use Hyperf\Di\Annotation\Inject;
 /**
  * https://github.com/phper666/jwt-auth
  * @author LI Yuzhao <562405704@qq.com>
@@ -20,13 +21,11 @@ class Jwt
 {
     use CommonTrait;
 
-    # 黑名单类对象
+    /**
+     * @Inject
+     * @var Blacklist
+     */
     protected $blacklist;
-
-    public function __construct(Blacklist $blacklist)
-    {
-        $this->blacklist = $blacklist;
-    }
 
     /**
      * 生成token
