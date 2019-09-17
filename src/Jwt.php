@@ -152,4 +152,18 @@ class Jwt
         $expTime = $exp - $nowTime;
         return $expTime;
     }
+
+    /**
+     * 获取jwt token解析的dataç
+     * @return array
+     */
+    public function getParserData()
+    {
+        $arr = [];
+        $claims = $this->getTokenObj()->getClaims();
+        foreach ($claims as $k => $v) {
+            $arr[$k] = $v->getValue();
+        }
+        return $arr;
+    }
 }
