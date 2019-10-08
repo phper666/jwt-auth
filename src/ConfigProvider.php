@@ -10,13 +10,16 @@ class ConfigProvider
     {
         return [
             'dependencies' => [
-
             ],
             'commands' => [
             ],
-            'scan' => [
-                'paths' => [
-                    __DIR__,
+            'listeners' => [],
+            // 合并到  config/autoload/annotations.php 文件
+            'annotations' => [
+                'scan' => [
+                    'paths' => [
+                        __DIR__,
+                    ],
                 ],
             ],
             'publish' => [
