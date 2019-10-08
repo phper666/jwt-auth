@@ -1,6 +1,8 @@
 ### 基于hyperf(https://doc.hyperf.io/#/zh/README) 框架的jwt鉴权(json web token)组件。
 ### 采用基于https://github.com/lcobucci/jwt/tree/3.3 进行封装。
 ### 黑名单的设置参考了这篇文章https://learnku.com/articles/17883
+### 注意：
+由于hyperf可以升级1.1版本，如果你用1.1版本，请需要修改jwt-auth的composer.json文件，把依赖hyperf的组件版本全部改为~1.1.0或者使用jwt-auth的2.0.1版本，这个版本是针对hyperf的1.1版本的
 ### 说明：
 ```shell
 jwt-auth支持单点登录、多点登录、支持注销token(token会失效)、支持刷新token  
