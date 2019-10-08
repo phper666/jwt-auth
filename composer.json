@@ -27,17 +27,17 @@
     },
     "require": {
         "php": ">=7.2",
-        "ext-swoole": ">=4.3",
-        "hyperf/utils": "1.0.*",
-        "hyperf/framework": "1.0.*",
-        "hyperf/di": "1.0.*",
-        "hyperf/cache": "~1.0.0",
+        "ext-swoole": ">=4.4",
+        "hyperf/utils": "~1.1.0",
+        "hyperf/framework": "~1.1.0",
+        "hyperf/di": "~1.1.0",
+        "hyperf/cache": "~1.1.0",
         "lcobucci/jwt": "^3.2",
         "nesbot/carbon": "^1.0 || ^2.0"
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^2.14",
-        "hyperf/testing": "1.0.*",
+        "hyperf/testing": "~1.1.0",
         "phpstan/phpstan": "^0.10.5",
         "swoft/swoole-ide-helper": "dev-master"
     },
