@@ -24,7 +24,8 @@ token不做限制原理：token不做限制，在token有效的时间内都能�
 ### 使用：
 ##### 1、拉取依赖 
 ```shell
-composer require phper666/jwt-auth
+如果你使用hyperf1.0.x版本，则 composer require phper666/jwt-auth:~1.0.1
+如果你使用hyperf1.1.x版本，则 composer require phper666/jwt-auth:~2.0.1
 ```
 ##### 2、发布配置
 ```shell
