@@ -8,6 +8,7 @@
 namespace Phper666\JwtAuth\Middleware;
 
 use Hyperf\HttpServer\Contract\ResponseInterface as HttpResponse;
+use Hyperf\Utils\Context;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -35,15 +36,14 @@ class JwtAuthMiddleware implements MiddlewareInterface
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $isValidToken = false;
+        // 通过参数传token
+        if ($token = $request->getQueryParams()['token'] ?? '') {
+            $request = $request->withAddedHeader('Authorization', $this->prefix . ' ' . $token);
+            // $request 为修改后的对象
+            $request = Context::set(ServerRequestInterface::class, $request);
+        }
         // 根据具体业务判断逻辑走向，这里假设用户携带的token有效
         $token = $request->getHeader('Authorization')[0] ?? '';
-        // 通过参数传token
-        if ($request->getQueryParams()['token']) {
-            $token = $request->getQueryParams()['token'] ?? '';
-            $request = $request->withAddedHeader('Authorization', 'Bearer ' . $token);
-            // $request 为修改后的对象
-            $request = \Hyperf\Utils\Context::set(ServerRequestInterface::class, $request);
-        }
         if (strlen($token) > 0) {
             $token = ucfirst($token);
             $arr = explode($this->prefix . ' ', $token);
