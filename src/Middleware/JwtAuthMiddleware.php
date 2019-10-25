@@ -36,8 +36,13 @@ class JwtAuthMiddleware implements MiddlewareInterface
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $isValidToken = false;
+        if (in_array($request->getMethod(), ['GET', 'HEAD'])) {
+            $token = $request->getQueryParams()['token'] ?? '';
+        } else {
+            $token = ($request->getParsedBody()['token'] ?? $request->getQueryParams()['token']) ?? '';
+        }
         // 通过参数传token
-        if ($token = $request->getQueryParams()['token'] ?? '') {
+        if ($token) {
             $request = $request->withAddedHeader('Authorization', $this->prefix . ' ' . $token);
             // $request 为修改后的对象
             $request = Context::set(ServerRequestInterface::class, $request);
