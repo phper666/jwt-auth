@@ -205,14 +205,28 @@ trait CommonTrait
     public function getHeaderToken()
     {
         $token = $this->request->getHeader('Authorization')[0] ?? '';
+        $token = $this->handleHeaderToken($token);
+        if ($token !== false) {
+            return $token;
+        }
+
+        throw new JWTException('A token is required', 500);
+    }
+
+    /**
+     * 处理头部token
+     * @param string $token
+     * @return bool|string
+     */
+    public function handleHeaderToken(string $token)
+    {
         if (strlen($token) > 0) {
             $token = ucfirst($token);
             $arr = explode($this->prefix . ' ', $token);
             $token = $arr[1] ?? '';
             if (strlen($token) > 0) return $token;
         }
-
-        throw new JWTException('A token is required', 500);
+        return false;
     }
 
     /**
