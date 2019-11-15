@@ -36,7 +36,7 @@ class JwtAuthMiddleware implements MiddlewareInterface
     {
         $isValidToken = false;
         // 根据具体业务判断逻辑走向，这里假设用户携带的token有效
-        $token = $request->getHeader('Authorization')[0] ?? '';
+        $token = $request->getHeaderLine('Authorization') ?? '';
         if (strlen($token) > 0) {
             $token = ucfirst($token);
             $arr = explode($this->prefix . ' ', $token);
