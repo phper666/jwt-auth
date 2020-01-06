@@ -112,6 +112,8 @@ class Jwt
         try {
             if (empty($token)) {
                 $token = $this->getTokenObj();
+            } else {
+                $token = $this->getTokenObj($token);
             }
         } catch (\RuntimeException $e) {
             throw new \RuntimeException($e->getMessage(), $e->getCode(), $e->getPrevious());
