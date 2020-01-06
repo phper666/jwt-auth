@@ -110,11 +110,7 @@ class Jwt
     public function checkToken(string $token = null, $validate = true, $verify = true)
     {
         try {
-            if (empty($token)) {
-                $token = $this->getTokenObj();
-            } else {
-                $token = $this->getTokenObj($token);
-            }
+            $token = $this->getTokenObj($token);
         } catch (\RuntimeException $e) {
             throw new \RuntimeException($e->getMessage(), $e->getCode(), $e->getPrevious());
         }
@@ -154,10 +150,10 @@ class Jwt
      * 获取token的过期剩余时间，单位为s
      * @return int|mixed
      */
-    public function getTokenDynamicCacheTime()
+    public function getTokenDynamicCacheTime(string $token = null)
     {
         $nowTime = time();
-        $exp = $this->getTokenObj()->getClaim('exp', $nowTime);
+        $exp = $this->getTokenObj($token)->getClaim('exp', $nowTime);
         $expTime = $exp - $nowTime;
         return $expTime;
     }
@@ -166,10 +162,10 @@ class Jwt
      * 获取jwt token解析的dataç
      * @return array
      */
-    public function getParserData()
+    public function getParserData(string $token = null)
     {
         $arr = [];
-        $claims = $this->getTokenObj()->getClaims();
+        $claims = $this->getTokenObj($token)->getClaims();
         foreach ($claims as $k => $v) {
             $arr[$k] = $v->getValue();
         }
