@@ -86,15 +86,18 @@ class Jwt
 
     /**
      * 让token失效
+     * @param string|null $token
      * @return bool
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
-    public function logout()
+    public function logout(string $token = null)
     {
-        $this->getHeaderToken();
-
-        $this->blacklist->add($this->getTokenObj());
-
+        if (!is_null($token) && $token !== '') {
+            $token = $this->handleHeaderToken($token);
+        } else {
+            $token = $this->getHeaderToken();
+        }
+        $this->blacklist->add($this->getTokenObj($token));
         return true;
     }
 
@@ -104,10 +107,12 @@ class Jwt
      * @return true
      * @throws \Throwable
      */
-    public function checkToken($validate = true, $verify = true)
+    public function checkToken(string $token = null, $validate = true, $verify = true)
     {
         try {
-            $token = $this->getTokenObj();
+            if (empty($token)) {
+                $token = $this->getTokenObj();
+            }
         } catch (\RuntimeException $e) {
             throw new \RuntimeException($e->getMessage(), $e->getCode(), $e->getPrevious());
         }
@@ -131,13 +136,15 @@ class Jwt
     }
 
     /**
-     * 获取Token token
-     * @param $token
-     * @param int $dynamicCacheTime
-     * @return string|null
+     * 获取Token对象
+     * @param string|null $token
+     * @return Token
      */
-    public function getTokenObj()
+    public function getTokenObj(string $token = null)
     {
+        if (!is_null($token) && $token !== '') {
+            return $this->getParser()->parse($token);
+        }
         return $this->getParser()->parse($this->getHeaderToken());
     }
 
