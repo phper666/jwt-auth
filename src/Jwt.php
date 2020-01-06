@@ -107,10 +107,12 @@ class Jwt
      * @return true
      * @throws \Throwable
      */
-    public function checkToken($validate = true, $verify = true)
+    public function checkToken(string $token = null, $validate = true, $verify = true)
     {
         try {
-            $token = $this->getTokenObj();
+            if (empty($token)) {
+                $token = $this->getTokenObj();
+            }
         } catch (\RuntimeException $e) {
             throw new \RuntimeException($e->getMessage(), $e->getCode(), $e->getPrevious());
         }
