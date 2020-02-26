@@ -39,7 +39,7 @@ class Jwt
             $uniqid = uniqid();
         } else { // 单点登录
             if (empty($claims[$this->ssoKey])) {
-                throw new JWTException("There is no {$this->ssoKey} key in the claims", 500);
+                throw new JWTException("There is no {$this->ssoKey} key in the claims", 400);
             }
             $uniqid = $claims[$this->ssoKey];
         }
@@ -74,7 +74,7 @@ class Jwt
     public function refreshToken()
     {
         if (!$this->getHeaderToken()) {
-            throw new JWTException('A token is required', 500);
+            throw new JWTException('A token is required', 400);
         }
         $claims = $this->blacklist->add($this->getTokenObj());
         unset($claims['iat']);

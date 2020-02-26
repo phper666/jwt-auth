@@ -166,7 +166,7 @@ trait CommonTrait
     {
         $alg = $token->getHeader('alg');
         if (empty($this->supportedAlgs[$alg])) {
-            throw new TokenValidException('Algorithm not supported', 500);
+            throw new TokenValidException('Algorithm not supported', 401);
         }
         /** @var Signer $signer */
         $signer = new $this->supportedAlgs[$alg];
@@ -210,7 +210,7 @@ trait CommonTrait
             return $token;
         }
 
-        throw new JWTException('A token is required', 500);
+        throw new JWTException('A token is required', 400);
     }
 
     /**

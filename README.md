@@ -242,4 +242,4 @@ class IndexController extends AbstractController
 例如：`$this->jwt->getParserData()`
 
 ##### 12、建议
-> 目前 `jwt` 抛出的异常目前有两种类型 `Phper666\JwtAuth\Exception\TokenValidException` 和 `Phper666\JwtAuth\Exception\JWTException,TokenValidException` 异常为 token 验证失败的异常，会抛出 `401` ,`JWTException` 异常会抛出 `500`，最好你们自己在项目异常重新返回错误信息
+> 目前 `jwt` 抛出的异常目前有两种类型 `Phper666\JwtAuth\Exception\TokenValidException` 和 `Phper666\JwtAuth\Exception\JWTException,TokenValidException` 异常为 token 验证失败的异常，会抛出 `401` ,`JWTException` 异常会抛出 `400`，最好你们自己在项目异常重新返回错误信息
