@@ -57,7 +57,20 @@ trait CommonTrait
         'ES512',
     ];
 
-    public $prefix = 'Bearer';
+    /**
+     * @Value("token.prefix")
+     */
+    public $prefix;
+
+    /**
+     * @Value("token.name")
+     */
+    public $tokenName;
+
+    /**
+     * @Value("token.position")
+     */
+    public $tokenPosition;
 
     /**
      * @Inject
@@ -70,7 +83,6 @@ trait CommonTrait
      * @var CacheInterface
      */
     public $storage;
-
 
     /**
      * @Value("jwt.secret")
@@ -86,6 +98,11 @@ trait CommonTrait
      * @Value("jwt.ttl")
      */
     public $ttl;
+
+    /**
+     * @Value("jwt.refresh_ttl")
+     */
+    public $refreshTtl;
 
     /**
      * @Value("jwt.alg")
@@ -118,8 +135,10 @@ trait CommonTrait
     public $enalbed = true;
 
     /**
-     * @see [[Lcobucci\JWT\Builder::__construct()]]
+     * @param Encoder|null $encoder
+     * @param ClaimFactory|null $claimFactory
      * @return Builder
+     * @see [[Lcobucci\JWT\Builder::__construct()]]
      */
     public function getBuilder(Encoder $encoder = null, ClaimFactory $claimFactory = null)
     {
@@ -127,8 +146,10 @@ trait CommonTrait
     }
 
     /**
-     * @see [[Lcobucci\JWT\Parser::__construct()]]
+     * @param Decoder|null $decoder
+     * @param ClaimFactory|null $claimFactory
      * @return Parser
+     * @see [[Lcobucci\JWT\Parser::__construct()]]
      */
     public function getParser(Decoder $decoder = null, ClaimFactory $claimFactory = null)
     {
@@ -198,8 +219,7 @@ trait CommonTrait
 
     /**
      * 获取http头部token
-     * @param $token
-     * @param int $dynamicCacheTime
+     * @deprecated 调整为根据位置动态获取Token
      * @return string|null
      */
     public function getHeaderToken()
@@ -214,9 +234,70 @@ trait CommonTrait
     }
 
     /**
+     * 取得token值
+     *
+     * @param bool $withPrefix
+     * @return string|null
+     */
+    public function retrieveToken($withPrefix = false)
+    {
+        if (strtolower($this->tokenPosition) === 'header') {
+            $token = $this->request->getHeader($this->tokenName)[0] ?? '';
+        } else {
+            $token = $this->request->query($this->tokenName);
+        }
+
+        $tokenWithoutPrefix = $this->handleToken($token);
+
+        if ($tokenWithoutPrefix === false) {
+            throw new JWTException('A token is required', 400);
+        }
+
+        return $withPrefix ? $token : $tokenWithoutPrefix;
+    }
+
+    /**
+     * 获取tokenName
+     * @return mixed
+     */
+    public function getTokenName()
+    {
+        return $this->tokenName;
+    }
+
+    /**
+     * 获取tokenPosition
+     * @return mixed
+     */
+    public function getTokenPosition()
+    {
+        return $this->tokenPosition;
+    }
+
+    /**
+     * 获取tokenPrefix
+     * @return mixed
+     */
+    public function getPrefix()
+    {
+        return $this->prefix;
+    }
+
+    /**
+     * 处理token, alias of handleHeaderToken
+     * @param string $token
+     * @return bool|string
+     */
+    public function handleToken(string $token)
+    {
+        return $this->handleHeaderToken($token);
+    }
+
+    /**
      * 处理头部token
      * @param string $token
      * @return bool|string
+     * @deprecated
      */
     public function handleHeaderToken(string $token)
     {
@@ -226,6 +307,7 @@ trait CommonTrait
             $token = $arr[1] ?? '';
             if (strlen($token) > 0) return $token;
         }
+
         return false;
     }
 
@@ -249,6 +331,182 @@ trait CommonTrait
     public function getTTL()
     {
         return (int)$this->ttl;
+    }
+
+    /**
+     * @param array $supportedAlgs
+     * @return self
+     */
+    private function _setSupportedAlgs(array $supportedAlgs): self
+    {
+        $this->supportedAlgs = $supportedAlgs;
+
+        return $this;
+    }
+
+    /**
+     * @param array $symmetryAlgs
+     * @return self
+     */
+    private function _setSymmetryAlgs(array $symmetryAlgs): self
+    {
+        $this->symmetryAlgs = $symmetryAlgs;
+
+        return $this;
+    }
+
+    /**
+     * @param array $asymmetricAlgs
+     * @return self
+     */
+    private function _setAsymmetricAlgs(array $asymmetricAlgs): self
+    {
+        $this->asymmetricAlgs = $asymmetricAlgs;
+
+        return $this;
+    }
+
+    /**
+     * @param mixed $prefix
+     * @return self
+     */
+    private function _setPrefix($prefix): self
+    {
+        $this->prefix = $prefix;
+
+        return $this;
+    }
+
+    /**
+     * @param mixed $tokenName
+     * @return self
+     */
+    private function _setTokenName($tokenName): self
+    {
+        $this->tokenName = $tokenName;
+
+        return $this;
+    }
+
+    /**
+     * @param mixed $tokenPosition
+     * @return self
+     */
+    private function _setTokenPosition($tokenPosition): self
+    {
+        $this->tokenPosition = $tokenPosition;
+
+        return $this;
+    }
+
+    /**
+     * @param mixed $secret
+     * @return self
+     */
+    private function _setSecret($secret): self
+    {
+        $this->secret = $secret;
+
+        return $this;
+    }
+
+    /**
+     * @param mixed $keys
+     * @return self
+     */
+    private function _setKeys($keys): self
+    {
+        $this->keys = $keys;
+
+        return $this;
+    }
+
+    /**
+     * @param mixed $ttl
+     * @return self
+     */
+    private function _setTtl($ttl): self
+    {
+        $this->ttl = $ttl;
+
+        return $this;
+    }
+
+    /**
+     * @param $refreshTtl
+     * @return self
+     */
+    private function _setRefreshTtl($refreshTtl): self
+    {
+        $this->refreshTtl = $refreshTtl;
+
+        return $this;
+    }
+
+    /**
+     * @param mixed $alg
+     * @return self
+     */
+    private function _setAlg($alg): self
+    {
+        $this->alg = $alg;
+
+        return $this;
+    }
+
+    /**
+     * @param mixed $loginType
+     * @return self
+     */
+    private function _setLoginType($loginType): self
+    {
+        $this->loginType = $loginType;
+
+        return $this;
+    }
+
+    /**
+     * @param mixed $ssoKey
+     * @return self
+     */
+    private function _setSsoKey($ssoKey): self
+    {
+        $this->ssoKey = $ssoKey;
+
+        return $this;
+    }
+
+    /**
+     * @param mixed $cacheTTL
+     * @return self
+     */
+    private function _setCacheTTL($cacheTTL): self
+    {
+        $this->cacheTTL = $cacheTTL;
+
+        return $this;
+    }
+
+    /**
+     * @param mixed $gracePeriod
+     * @return self
+     */
+    private function _setGracePeriod($gracePeriod): self
+    {
+        $this->gracePeriod = $gracePeriod;
+
+        return $this;
+    }
+
+    /**
+     * @param mixed $enalbed
+     * @return self
+     */
+    private function _setEnalbed($enalbed): self
+    {
+        $this->enalbed = $enalbed;
+
+        return $this;
     }
 
     public function __get($name)

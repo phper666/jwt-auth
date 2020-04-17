@@ -6,6 +6,13 @@ return [
     # 登录方式，sso为单点登录，mpop为多点登录
     'login_type' => env('JWT_LOGIN_TYPE', 'mpop'),
 
+    # token基本信息
+    'token' => [
+        'position' => 'Header', # token位置，支持Header 或 Query
+        'name' => 'Authorization', # 配置token-name
+        'prefix' => 'Bearer', # 配置 token-prefix
+    ],
+
     # 单点登录自定义数据中必须存在uid的键值，这个key你可以自行定义，只要自定义数据中存在该键即可
     'sso_key' => 'uid',
 
@@ -27,6 +34,9 @@ return [
 
     # token过期时间，单位为秒
     'ttl' => env('JWT_TTL', 7200),
+
+    # token允许刷新的过期时间，既在有效时间内自动换发token，默认一周，单位为秒
+    'refresh_ttl' => env('JWT_TTL', 604800),
 
     # jwt的hearder加密算法
     'alg' => env('JWT_ALG', 'HS256'),

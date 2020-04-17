@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace Phper666\JwtAuth\Helper;
 
 use Carbon\Carbon;
+
 class Utils
 {
     /**
