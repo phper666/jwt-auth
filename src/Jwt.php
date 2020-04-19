@@ -82,17 +82,8 @@ class Jwt
         $signer = new $this->supportedAlgs[$this->alg];
         $time = time();
 
-        if (isset($claims['refresh_exp'])) {
-            // exp 过期后不抛异常，通过判断 isExpired 和 canRefresh 来完成token的换发
-            $claimFactory = new ClaimFactory([
-                'exp' => null,
-            ]);
-            $builder = $this->getBuilder(null, $claimFactory);
-        } else {
-            $builder = $this->getBuilder();
-        }
-
-        $builder = $builder->identifiedBy($uniqid) // 设置jwt的jti
+        $builder = $this->getBuilder()
+            ->identifiedBy($uniqid) // 设置jwt的jti
             ->issuedAt($time)// (iat claim) 发布时间
             ->canOnlyBeUsedAfter($time)// (nbf claim) 在此之前不可用
             ->expiresAt($time + $this->ttl);// (exp claim) 到期时间
