@@ -19,7 +19,21 @@ use Phper666\JwtAuth\Traits\CommonTrait;
 /**
  * https://github.com/phper666/jwt-auth
  * @author LI Yuzhao <562405704@qq.com>
- * @method xxxx
+ * @method $this setSupportedAlgs(array $supportedAlgs)
+ * @methid $this setPrefix($prefix)
+ * @methid $this setTokenName($tokenName)
+ * @methid $this setTokenPosition($tokenPosition)
+ * @methid $this setSecret($secret)
+ * @methid $this setKeys($keys)
+ * @methid $this setTtl($ttl)
+ * @methid $this setRefreshTtl($refreshTtl)
+ * @methid $this setAlg($alg)
+ * @methid $this setLoginType($loginType)
+ * @methid $this setSsoKey($ssoKey)
+ * @methid $this setCacheTTL($cacheTTL)
+ * @method $this setGracePeriod($gracePeriod)
+ * @method $this setEnalbed($enalbed)
+ *
  */
 class Jwt
 {

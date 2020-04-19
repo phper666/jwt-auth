@@ -334,39 +334,6 @@ trait CommonTrait
     }
 
     /**
-     * @param array $supportedAlgs
-     * @return self
-     */
-    private function _setSupportedAlgs(array $supportedAlgs): self
-    {
-        $this->supportedAlgs = $supportedAlgs;
-
-        return $this;
-    }
-
-    /**
-     * @param array $symmetryAlgs
-     * @return self
-     */
-    private function _setSymmetryAlgs(array $symmetryAlgs): self
-    {
-        $this->symmetryAlgs = $symmetryAlgs;
-
-        return $this;
-    }
-
-    /**
-     * @param array $asymmetricAlgs
-     * @return self
-     */
-    private function _setAsymmetricAlgs(array $asymmetricAlgs): self
-    {
-        $this->asymmetricAlgs = $asymmetricAlgs;
-
-        return $this;
-    }
-
-    /**
      * @param mixed $prefix
      * @return self
      */
