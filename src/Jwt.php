@@ -10,7 +10,6 @@ namespace Phper666\JwtAuth;
 
 use Hyperf\Utils\Arr;
 use Hyperf\Utils\Str;
-use Lcobucci\JWT\Claim\Factory as ClaimFactory;
 use Lcobucci\JWT\Token;
 use Phper666\JwtAuth\Exception\JWTException;
 use Phper666\JwtAuth\Exception\TokenValidException;
@@ -20,17 +19,17 @@ use Phper666\JwtAuth\Traits\CommonTrait;
  * https://github.com/phper666/jwt-auth
  * @author LI Yuzhao <562405704@qq.com>
  * @method $this setSupportedAlgs(array $supportedAlgs)
- * @methid $this setPrefix($prefix)
- * @methid $this setTokenName($tokenName)
- * @methid $this setTokenPosition($tokenPosition)
- * @methid $this setSecret($secret)
- * @methid $this setKeys($keys)
- * @methid $this setTtl($ttl)
- * @methid $this setRefreshTtl($refreshTtl)
- * @methid $this setAlg($alg)
- * @methid $this setLoginType($loginType)
- * @methid $this setSsoKey($ssoKey)
- * @methid $this setCacheTTL($cacheTTL)
+ * @method $this setPrefix($prefix)
+ * @method $this setTokenName($tokenName)
+ * @method $this setTokenPosition($tokenPosition)
+ * @method $this setSecret($secret)
+ * @method $this setKeys($keys)
+ * @method $this setTtl($ttl)
+ * @method $this setRefreshTtl($refreshTtl)
+ * @method $this setAlg($alg)
+ * @method $this setLoginType($loginType)
+ * @method $this setSsoKey($ssoKey)
+ * @method $this setCacheTTL($cacheTTL)
  * @method $this setGracePeriod($gracePeriod)
  * @method $this setEnalbed($enalbed)
  *
