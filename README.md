@@ -2,49 +2,156 @@
 ### 采用基于https://github.com/lcobucci/jwt/tree/3.3 进行封装。
 ### 黑名单的设置参考了这篇文章https://learnku.com/articles/17883
 ### 注意：
-由于 `Hyperf` 可以升级 `1.1` 版本，如果你用 `1.1` 版本，请需要修改 `jwt-auth` 的 `composer.json` 文件，把依赖 `Hyperf` 的组件版本全部改为 `~1.1.0` 或者使用 `jwt-auth` 的 `^2.0.1` 版本，这个版本是针对 `Hyperf` 的 `1.1` 版本的
+1、不兼容2.x,如果想要使用3.x，需要重新发布配置，以前的token可能也会失效   
+2、按照hyperf原有的组件规范做重写了该包   
+3、支持多应用单点登录、多应用多点登录   
+4、修改了命名空间名，原来为`JwtAuth`，现在为`JWTAuth`   
+5、如有建议欢迎给我邮件，562405704@qq.com   
 ### 说明：
 
-> `jwt-auth` 支持单点登录、多点登录、支持注销 token(token会失效)、支持刷新 token  
+> `jwt-auth` 支持多应用单点登录、多应用多点登录、多应用支持注销 token(token会失效)、支持多应用刷新 token  
   
-> 单点登录：只会有一个 token 生效，一旦刷新 token ，前面生成的 token 都会失效，一般以用户 id 来做区分  
+> 多应用单点登录：在该应用配置下只会有一个 token 生效，一旦刷新 token ，前面生成的 token 都会失效，一般以用户 id 来做区分  
   
-> 多点登录：token 不做限制，一旦刷新 token ，则当前 token 会失效  
+> 多应用多点登录：在该配置应用下token 不做限制，一旦刷新 token ，则当前配置应用的 token 会失效  
   
-> 注意：使用单点登录或者多点登录时，必须要开启黑名单，并且使用 `Hyperf` 的缓存(建议使用 `redis` 缓存)。如果不开启黑名单，无法使 token 失效，生成的 token 会在有效时间内都可以使用(未更换证书或者 secret )。  
+> 注意：使用多应用单点登录或者多应用多点登录时，必须要开启黑名单，并且使用 `Hyperf` 的缓存(建议使用 `redis` 缓存)。如果不开启黑名单，无法使 token 失效，生成的 token 会在有效时间内都可以使用(未更换证书或者 secret )。  
   
-> 单点登录原理：`JWT` 有七个默认字段供选择。单点登录主要用到 jti 默认字段，`jti` 字段的值默认为用户 id。当生成 token 时，`getToken` 方法有一个 `$isInsertSsoBlack` 参数来控制是否会把前面生成的 token 都失效，默认是失效的，如果想不失效，设置为     `false` 即可。但是如果是调用 `refreshToken` 来刷新 token 或者调用 `logout` 注销token，默认前面生成的 token 都会失效。  
-jwt 的生成的 token 加入黑名单时，会把用户 id 作为缓存的键，当前时间作为值，配置文件中的 `blacklist_cache_ttl` 作为缓存的失效时间。每次生成 token 或者刷新 token 时，会先从 token 中拿到签发时间和 `jti` 值找到对应的缓存拿到时间，拿到时间后跟 token 的签发时间对比，如果签发时间小于等于拿到的时间值，则 token 判断为失效的。（`jti` 在单点登录中，存的值是用户 id）  
+> 多应用单点登录原理：`JWT` 有七个默认字段供选择。单点登录主要用到 jti 默认字段，`jti` 字段的值默认为缓存到redis中的key(该key的生成为场景值+存储的用户id(`sso_key`))，这个key的值会存一个签发时间，token检测会根据这个时间来跟token原有的签发时间对比，如果token原有时间小于等于redis存的时间，则认为无效
   
-> 多点登录原理：多点登录跟单点登录差不多，唯一不同的是jti的值不是用户 id，而是一个唯一字符串，每次调用 `refreshToken` 来刷新 `token` 或者调用 `logout` 注销 token 会默认把请求头中的 token 加入到黑名单，而不会影响到别的 token  
+> 多应用多点登录原理：多点登录跟单点登录差不多，唯一不同的是jti的值不是场景值+用户id(`sso_key`)，而是一个唯一字符串，每次调用 `refreshToken` 来刷新 `token` 或者调用 `logout` 注销 token 会默认把请求头中的 token 加入到黑名单，而不会影响到别的 token  
   
 > token 不做限制原理：token 不做限制，在 token 有效的时间内都能使用，你只要把配置文件中的 `blacklist_enabled` 设置为 `false` 即可，即为关闭黑名单功能
 
 
 ### 使用：
 ##### 1、拉取依赖 
-> 如果你使用 `Hyperf 1.0.x` 版本,则
+> 使用 `Hyperf 1.1.x` 版本,则
 ```shell
-composer require phper666/jwt-auth:~1.0.1
+composer require phper666/jwt-auth:~3.0.0
 ``` 
-
-> 如果你使用 `Hyperf 1.1.x` 版本，则 
-```shell
-composer require phper666/jwt-auth:~2.0.1
-```
 
 ##### 2、发布配置
 ```shell
 php bin/hyperf.php jwt:publish --config
 ```
-
+或者
+```shell
+php bin/hyperf.php vendor:publish phper666/jwt-auth
+```
 ##### 3、jwt配置
 去配置 `config/autoload/jwt.php` 文件或者在配置文件 `.env` 里配置
-```shell
-# 务必改为你自己的字符串
-JWT_SECRET=hyperf
-#token过期时间，单位为秒
-JWT_TTL=60
+```php
+<?php
+return [
+    'login_type' => env('JWT_LOGIN_TYPE', 'mpop'), //  登录方式，sso为单点登录，mpop为多点登录
+
+    /**
+     * 单点登录自定义数据中必须存在uid的键值，这个key你可以自行定义，只要自定义数据中存在该键即可
+     */
+    'sso_key' => 'uid',
+
+    'secret' => env('JWT_SECRET', 'phper666'), // 非对称加密使用字符串,请使用自己加密的字符串
+
+    /**
+     * JWT 权限keys
+     * 对称算法: HS256, HS384 & HS512 使用 `JWT_SECRET`.
+     * 非对称算法: RS256, RS384 & RS512 / ES256, ES384 & ES512 使用下面的公钥私钥.
+     */
+    'keys' => [
+        'public' => env('JWT_PUBLIC_KEY'), // 公钥，例如：'file:///path/to/public/key'
+        'private' => env('JWT_PRIVATE_KEY'), // 私钥，例如：'file:///path/to/private/key'
+    ],
+
+    'ttl' => env('JWT_TTL', 7200), // token过期时间，单位为秒
+
+    'alg' => env('JWT_ALG', 'HS256'), // jwt的hearder加密算法
+
+    /**
+     * 支持的算法
+     */
+    'supported_algs' => [
+        'HS256' => 'Lcobucci\JWT\Signer\Hmac\Sha256',
+        'HS384' => 'Lcobucci\JWT\Signer\Hmac\Sha384',
+        'HS512' => 'Lcobucci\JWT\Signer\Hmac\Sha512',
+        'ES256' => 'Lcobucci\JWT\Signer\Ecdsa\Sha256',
+        'ES384' => 'Lcobucci\JWT\Signer\Ecdsa\Sha384',
+        'ES512' => 'Lcobucci\JWT\Signer\Ecdsa\Sha512',
+        'RS256' => 'Lcobucci\JWT\Signer\Rsa\Sha256',
+        'RS384' => 'Lcobucci\JWT\Signer\Rsa\Sha384',
+        'RS512' => 'Lcobucci\JWT\Signer\Rsa\Sha512',
+    ],
+
+    /**
+     * 对称算法名称
+     */
+    'symmetry_algs' => [
+        'HS256',
+        'HS384',
+        'HS512'
+    ],
+
+    /**
+     * 非对称算法名称
+     */
+    'asymmetric_algs' => [
+        'RS256',
+        'RS384',
+        'RS512',
+        'ES256',
+        'ES384',
+        'ES512',
+    ],
+
+    /**
+     * 是否开启黑名单，单点登录和多点登录的注销、刷新使原token失效，必须要开启黑名单，目前黑名单缓存只支持hyperf缓存驱动
+     */
+    'blacklist_enabled' => env('JWT_BLACKLIST_ENABLED', true),
+
+    /**
+     * 黑名单的宽限时间 单位为：秒，注意：如果使用单点登录，该宽限时间无效
+     */
+    'blacklist_grace_period' => env('JWT_BLACKLIST_GRACE_PERIOD', 0),
+
+    /**
+     * 黑名单缓存token时间，注意：该时间一定要设置比token过期时间要大一点，默认为1天,最好设置跟过期时间一样
+     */
+    'blacklist_cache_ttl' => env('JWT_TTL', 86400),
+
+    'blacklist_prefix' => 'phper666_jwt', // 黑名单缓存的前缀
+
+    /**
+     * 区分不同场景的token，比如你一个项目可能会有多种类型的应用接口鉴权,下面自行定义，我只是举例子
+     * 下面的配置会自动覆盖根配置，比如application1会里面的数据会覆盖掉根数据
+     * 下面的scene会和根数据合并
+     * scene必须存在一个default
+     * 什么叫根数据，这个配置的一维数组，除了scene都叫根配置
+     */
+    'scene' => [
+        'default' => [],
+        'application1' => [
+            'login_type' => 'sso', //  登录方式，sso为单点登录，mpop为多点登录
+            'sso_key' => 'uid',
+            'ttl' => 100, // token过期时间，单位为秒
+            'blacklist_cache_ttl' => env('JWT_TTL', 100), // 黑名单缓存token时间，注意：该时间一定要设置比token过期时间要大一点，默认为100秒,最好设置跟过期时间一样
+        ],
+        'application2' => [
+            'login_type' => 'sso', //  登录方式，sso为单点登录，mpop为多点登录
+            'sso_key' => 'uid',
+            'ttl' => 100, // token过期时间，单位为秒
+            'blacklist_cache_ttl' => env('JWT_TTL', 100), // 黑名单缓存token时间，注意：该时间一定要设置比token过期时间要大一点，默认为100秒,最好设置跟过期时间一样
+        ],
+        'application3' => [
+            'login_type' => 'mppo', //  登录方式，sso为单点登录，mpop为多点登录
+            'ttl' => 100, // token过期时间，单位为秒
+            'blacklist_cache_ttl' => env('JWT_TTL', 100), // 黑名单缓存token时间，注意：该时间一定要设置比token过期时间要大一点，默认为100秒,最好设置跟过期时间一样
+        ]
+    ],
+    'model' => [ // TODO 支持直接获取某模型的数据
+        'class' => '',
+        'pk' => 'uid'
+    ]
+];
 ```
 更多的配置请到 `config/autoload/jwt.php` 查看
 ##### 4、全局路由验证
@@ -53,7 +160,7 @@ JWT_TTL=60
 <?php
 return [
     'http' => [
-        Phper666\JwtAuth\Middleware\JwtAuthMiddleware:class
+        Phper666\JWTAuth\Middleware\JWTAuthMiddleware:class
     ],
 ];
 ```
@@ -64,7 +171,7 @@ return [
 
 Router::addGroup('/v1', function () {
     Router::get('/data', 'App\Controller\IndexController@getData');
-}, ['middleware' => [Phper666\JwtAuth\Middleware\JwtAuthMiddleware::class]]);
+}, ['middleware' => [Phper666\JWTAuth\Middleware\JWTAuthMiddleware::class]]);
 ```
 ##### 6、注解的路由验证
 请看官方文档：https://doc.hyperf.io/#/zh/middleware/middleware
@@ -141,32 +248,65 @@ Authorization  Bearer token
 }
 ```
 ##### 10、例子文件
-```shell
+```php
 <?php
-
 declare(strict_types=1);
-
 namespace App\Controller;
-
+use Hyperf\HttpServer\Annotation\DeleteMapping;
+use Hyperf\HttpServer\Annotation\GetMapping;
+use Hyperf\HttpServer\Annotation\PostMapping;
+use Hyperf\HttpServer\Annotation\PutMapping;
+use Hyperf\HttpServer\Contract\RequestInterface;
+use Hyperf\HttpServer\Contract\ResponseInterface;
+use Phper666\JWTAuth\JWT;
+use Hyperf\HttpServer\Annotation\Middleware;
+use Phper666\JWTAuth\Middleware\JWTAuthMiddleware;
 use Hyperf\Di\Annotation\Inject;
-use Hyperf\HttpServer\Annotation\AutoController;
-use \Phper666\JwtAuth\Jwt;
+use Psr\Container\ContainerInterface;
 
 /**
- * @AutoController()
+ * @\Hyperf\HttpServer\Annotation\Controller(prefix="api")
  * Class IndexController
  * @package App\Controller
  */
-class IndexController extends AbstractController
+class IndexController
 {
     /**
-     * @Inject()
-     * @var Jwt
+     *
+     * @Inject
+     * @var JWT
      */
     protected $jwt;
 
-    # 模拟登录
-    public function login()
+    /**
+     * @var ContainerInterface
+     */
+    protected $container;
+
+    /**
+     * @var RequestInterface
+     */
+    protected $request;
+
+    /**
+     * @var ResponseInterface
+     */
+    protected $response;
+
+    public function __construct(ContainerInterface $container)
+    {
+        $this->container = $container;
+        $this->request = $container->get(RequestInterface::class);
+        $this->response = $container->get(ResponseInterface::class);
+    }
+
+    /**
+     * 模拟登录
+     * @PostMapping(path="login")
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
+    public function loginDefault()
     {
         $username = $this->request->input('username');
         $password = $this->request->input('password');
@@ -175,12 +315,13 @@ class IndexController extends AbstractController
                 'uid' => 1, // 如果使用单点登录，必须存在配置文件中的sso_key的值，一般设置为用户的id
                 'username' => 'xx',
             ];
-            $token = $this->jwt->getToken($userData);
+            // 使用默认场景登录
+            $token = $this->jwt->setScene('default')->getToken($userData);
             $data = [
                 'code' => 0,
                 'msg' => 'success',
                 'data' => [
-                    'token' => (string)$token,
+                    'token' => $token,
                     'exp' => $this->jwt->getTTL(),
                 ]
             ];
@@ -189,7 +330,102 @@ class IndexController extends AbstractController
         return $this->response->json(['code' => 0, 'msg' => '登录失败', 'data' => []]);
     }
 
-    # 刷新token，http头部必须携带token才能访问的路由
+    /**
+     * 模拟登录
+     * @PostMapping(path="login1")
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
+    public function loginApplication1()
+    {
+        $username = $this->request->input('username');
+        $password = $this->request->input('password');
+        if ($username && $password) {
+            $userData = [
+                'uid' => 1, // 如果使用单点登录，必须存在配置文件中的sso_key的值，一般设置为用户的id
+                'username' => 'xx',
+            ];
+            // 使用默认场景登录
+            $token = $this->jwt->setScene('application1')->getToken($userData);
+            $data = [
+                'code' => 0,
+                'msg' => 'success',
+                'data' => [
+                    'token' => $token,
+                    'exp' => $this->jwt->getTTL(),
+                ]
+            ];
+            return $this->response->json($data);
+        }
+        return $this->response->json(['code' => 0, 'msg' => '登录失败', 'data' => []]);
+    }
+
+    /**
+     * 模拟登录
+     * @PostMapping(path="login2")
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
+    public function loginApplication2()
+    {
+        $username = $this->request->input('username');
+        $password = $this->request->input('password');
+        if ($username && $password) {
+            $userData = [
+                'uid' => 1, // 如果使用单点登录，必须存在配置文件中的sso_key的值，一般设置为用户的id
+                'username' => 'xx',
+            ];
+            // 使用默认场景登录
+            $token = $this->jwt->setScene('application2')->getToken($userData);
+            $data = [
+                'code' => 0,
+                'msg' => 'success',
+                'data' => [
+                    'token' => $token,
+                    'exp' => $this->jwt->getTTL(),
+                ]
+            ];
+            return $this->response->json($data);
+        }
+        return $this->response->json(['code' => 0, 'msg' => '登录失败', 'data' => []]);
+    }
+
+    /**
+     * 模拟登录
+     * @PostMapping(path="login3")
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
+    public function loginApplication3()
+    {
+        $username = $this->request->input('username');
+        $password = $this->request->input('password');
+        if ($username && $password) {
+            $userData = [
+                'uid' => 1, // 如果使用单点登录，必须存在配置文件中的sso_key的值，一般设置为用户的id
+                'username' => 'xx',
+            ];
+            // 使用默认场景登录
+            $token = $this->jwt->setScene('application3')->getToken($userData);
+            $data = [
+                'code' => 0,
+                'msg' => 'success',
+                'data' => [
+                    'token' => $token,
+                    'exp' => $this->jwt->getTTL(),
+                ]
+            ];
+            return $this->response->json($data);
+        }
+        return $this->response->json(['code' => 0, 'msg' => '登录失败', 'data' => []]);
+    }
+
+    /**
+     * @PutMapping(path="refresh")
+     * @Middleware(JWTAuthMiddleware::class)
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
     public function refreshToken()
     {
         $token = $this->jwt->refreshToken();
@@ -204,42 +440,43 @@ class IndexController extends AbstractController
         return $this->response->json($data);
     }
 
-    # 注销token，http头部必须携带token才能访问的路由
+    /**
+     * @DeleteMapping(path="logout")
+     * @Middleware(JWTAuthMiddleware::class)
+     * @return bool
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
     public function logout()
     {
-        $this->jwt->logout();
-        return true;
+        return $this->jwt->logout();
     }
 
-    # http头部必须携带token才能访问的路由
+    /**
+     * http头部必须携带token才能访问的路由
+     * @GetMapping(path="list")
+     * @Middleware(JWTAuthMiddleware::class)
+     * @return \Psr\Http\Message\ResponseInterface
+     */
     public function getData()
     {
         $data = [
             'code' => 0,
             'msg' => 'success',
-            'data' => [
-                'cache_time' => $this->jwt->getTokenDynamicCacheTime() // 获取token的有效时间，动态的
-            ]
+            'data' => $this->jwt->getParserData()
         ];
         return $this->response->json($data);
     }
-
-    public function index()
-    {
-        $user = $this->request->input('user', 'Hyperf');
-        $method = $this->request->getMethod();
-
-        return [
-            'method' => $method,
-            'message' => "Hello {$user}.",
-        ];
-    }
 }
-
 ```
 ##### 11、获取解析后的 token 数据
 提供了一个方法     `getParserData` 来获取解析后的 token 数据。
 例如：`$this->jwt->getParserData()`
+还提供了一个工具类，\Phper666\JWTAuth\Util\JWTUtil,里面也有getParserData   
 
 ##### 12、建议
-> 目前 `jwt` 抛出的异常目前有两种类型 `Phper666\JwtAuth\Exception\TokenValidException` 和 `Phper666\JwtAuth\Exception\JWTException,TokenValidException` 异常为 token 验证失败的异常，会抛出 `401` ,`JWTException` 异常会抛出 `400`，最好你们自己在项目异常重新返回错误信息
+> 目前 `jwt` 抛出的异常目前有两种类型 
+>`Phper666\JwtAuth\Exception\TokenValidException`、    
+>`Phper666\JwtAuth\Exception\JWTException,TokenValidException`  
+>异常为 `TokenValidException` 验证失败的异常，会抛出 `401` ,   
+>`JWTException` 异常会抛出 `400`，   
+>最好你们自己在项目异常重新返回错误信息

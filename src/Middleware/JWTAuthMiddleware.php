@@ -5,17 +5,17 @@
  * Date: 2019-08-01
  * Time: 22:32
  */
-namespace Phper666\JwtAuth\Middleware;
+namespace Phper666\JWTAuth\Middleware;
 
 use Hyperf\HttpServer\Contract\ResponseInterface as HttpResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Phper666\JwtAuth\Jwt;
-use Phper666\JwtAuth\Exception\TokenValidException;
+use Phper666\JWTAuth\JWT;
+use Phper666\JWTAuth\Exception\TokenValidException;
 
-class JwtAuthMiddleware implements MiddlewareInterface
+class JWTAuthMiddleware implements MiddlewareInterface
 {
     /**
      * @var HttpResponse
@@ -26,20 +26,27 @@ class JwtAuthMiddleware implements MiddlewareInterface
 
     protected $jwt;
 
-    public function __construct(HttpResponse $response, Jwt $jwt)
+    public function __construct(HttpResponse $response, JWT $jwt)
     {
         $this->response = $response;
         $this->jwt = $jwt;
     }
 
+    /**
+     * @param ServerRequestInterface  $request
+     * @param RequestHandlerInterface $handler
+     * @return ResponseInterface
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     * @throws \Throwable
+     */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $isValidToken = false;
         // 根据具体业务判断逻辑走向，这里假设用户携带的token有效
-        $token = $request->getHeader('Authorization')[0] ?? '';
+        $token = $request->getHeaderLine('Authorization') ?? '';
         if (strlen($token) > 0) {
             $token = ucfirst($token);
-            $arr = explode($this->prefix . ' ', $token);
+            $arr = explode("{$this->prefix }", $token);
             $token = $arr[1] ?? '';
             if (strlen($token) > 0 && $this->jwt->checkToken()) {
                 $isValidToken = true;

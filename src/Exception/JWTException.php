@@ -6,7 +6,7 @@
  * Time: 13:43
  */
 
-namespace Phper666\JwtAuth\Exception;
+namespace Phper666\JWTAuth\Exception;
 
 class JWTException extends \RuntimeException
 {

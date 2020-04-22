@@ -17,41 +17,28 @@
     "description": "jwt-auth Component",
     "autoload": {
         "psr-4": {
-            "Phper666\\JwtAuth\\": "src/"
+            "Phper666\\JWTAuth\\": "src/"
         }
     },
-    "autoload-dev": {
-        "psr-4": {
-            "HyperfTest\\": "tests"
-        }
-    },
+    "autoload-dev": {},
     "require": {
         "php": ">=7.2",
         "ext-swoole": ">=4.4",
-        "hyperf/utils": "~1.1.0",
-        "hyperf/framework": "~1.1.0",
-        "hyperf/di": "~1.1.0",
-        "hyperf/cache": "~1.1.0",
         "lcobucci/jwt": "^3.2",
-        "nesbot/carbon": "^1.0 || ^2.0"
+        "nesbot/carbon": "^1.0 || ^2.0",
+        "hyperf/cache": "~1.1.0",
+        "hyperf/command": "~1.1.0",
+        "hyperf/config": "~1.1.0",
+        "hyperf/di": "~1.1.0"
     },
-    "require-dev": {
-        "friendsofphp/php-cs-fixer": "^2.14",
-        "hyperf/testing": "~1.1.0",
-        "phpstan/phpstan": "^0.10.5",
-        "swoft/swoole-ide-helper": "dev-master"
-    },
+    "require-dev": {},
     "config": {
         "sort-packages": true
     },
-    "scripts": {
-        "test": "co-phpunit -c phpunit.xml --colors=always",
-        "analyze": "phpstan analyse --memory-limit 300M -l 0 ./src",
-        "cs-fix": "php-cs-fixer fix $1"
-    },
+    "scripts": {},
     "extra": {
         "hyperf": {
-            "config": "Phper666\\JwtAuth\\ConfigProvider"
+            "config": "Phper666\\JWTAuth\\ConfigProvider"
         }
     }
 }

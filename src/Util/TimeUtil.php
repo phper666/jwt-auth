@@ -1,19 +1,16 @@
 <?php
-
 declare(strict_types=1);
 /**
- * This file is part of Hyperf.
- *
- * @link     https://www.hyperf.io
- * @document https://doc.hyperf.io
- * @contact  group@hyperf.io
- * @license  https://github.com/hyperf-cloud/hyperf/blob/master/LICENSE
+ * Created by PhpStorm.
+ * User: liyuzhao
+ * Date: 2020/4/21
+ * Time: 1:59 下午
  */
 
-namespace Phper666\JwtAuth\Helper;
-
+namespace Phper666\JWTAuth\Util;
 use Carbon\Carbon;
-class Utils
+
+class TimeUtil
 {
     /**
      * Get the Carbon instance for the current time.
