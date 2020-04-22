@@ -36,7 +36,9 @@ class JwtAuthMiddleware implements MiddlewareInterface
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         try {
-            if ($this->jwt->checkToken()) {
+            $token = $this->jwt->retrieveToken();
+            if ($this->jwt->checkToken($token, false)) {
+                // validate会对exp进行校验，过期抛异常，此处忽略校验（也可以通过重写getParser()修改行为）
                 if ($this->jwt->isExpired()) {
                     if (!$this->jwt->canRefresh()) {
                         throw new JWTException('Token is expired!', 403);
