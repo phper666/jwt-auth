@@ -6,7 +6,8 @@
 2、按照hyperf原有的组件规范做重写了该包   
 3、支持多应用单点登录、多应用多点登录   
 4、修改了命名空间名，原来为`JwtAuth`，现在为`JWTAuth`   
-5、如有建议欢迎给我邮件，562405704@qq.com   
+5、修改了文件名称，原来为`Jwt`,现在为`JWT`,原来为`Blacklist`,现在为`BlackList`   
+6、如有建议欢迎给我邮件，562405704@qq.com   
 ### 说明：
 
 > `jwt-auth` 支持多应用单点登录、多应用多点登录、多应用支持注销 token(token会失效)、支持多应用刷新 token  
@@ -177,12 +178,12 @@ Router::addGroup('/v1', function () {
 请看官方文档：https://doc.hyperf.io/#/zh/middleware/middleware
 在你想要验证的地方加入 `jwt 验证中间` 件即可。
 
-##### 7、模拟登录获取token
+##### 7、模拟登录获取token,具体情况下面的例子文件
 ```shell
 <?php
 
 namespace App\Controller;
-use \Phper666\JwtAuth\Jwt;
+use \Phper666\JWTAuth\JWT;
 class IndexController extends Controller
 {
     # 模拟登录,获取token
@@ -192,13 +193,21 @@ class IndexController extends Controller
         $password = $this->request->input('password');
         if ($username && $password) {
             $userData = [
-                'uid' => 1,
+                'uid' => 1, // 如果使用单点登录，必须存在配置文件中的sso_key的值，一般设置为用户的id
                 'username' => 'xx',
             ];
-            $token = (string)$jwt->getToken($userData);
-            return $this->response->json(['code' => 0, 'msg' => '获取token成功', 'data' => ['token' => $token]]);
+            // 使用默认场景登录
+            $token = $this->jwt->setScene('default')->getToken($userData);
+            $data = [
+                'code' => 0,
+                'msg' => 'success',
+                'data' => [
+                    'token' => $token,
+                    'exp' => $this->jwt->getTTL(),
+                ]
+            ];
+            return $this->response->json($data);
         }
-
         return $this->response->json(['code' => 0, 'msg' => '登录失败', 'data' => []]);
     }
 
@@ -219,7 +228,7 @@ Router::post('/login', 'App\Controller\IndexController@login');
 # 获取数据
 Router::addGroup('/v1', function () {
     Router::get('/data', 'App\Controller\IndexController@getData');
-}, ['middleware' => [Phper666\JwtAuth\Middleware\JwtAuthMiddleware::class]]);
+}, ['middleware' => [Phper666\JWTAuth\Middleware\JWTAuthMiddleware::class]]);
 ```
 ##### 8、鉴权
 在需要鉴权的接口,请求该接口时在 `HTTP` 头部加入
