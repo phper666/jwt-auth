@@ -131,21 +131,24 @@ return [
     'scene' => [
         'default' => [],
         'application1' => [
+            'secret' => 'application1', // 非对称加密使用字符串,请使用自己加密的字符串
             'login_type' => 'sso', //  登录方式，sso为单点登录，mpop为多点登录
             'sso_key' => 'uid',
-            'ttl' => 100, // token过期时间，单位为秒
-            'blacklist_cache_ttl' => env('JWT_TTL', 100), // 黑名单缓存token时间，注意：该时间一定要设置比token过期时间要大一点，默认为100秒,最好设置跟过期时间一样
+            'ttl' => 7200, // token过期时间，单位为秒
+            'blacklist_cache_ttl' => env('JWT_TTL', 7200), // 黑名单缓存token时间，注意：该时间一定要设置比token过期时间要大一点，默认为100秒,最好设置跟过期时间一样
         ],
         'application2' => [
+            'secret' => 'application2', // 非对称加密使用字符串,请使用自己加密的字符串
             'login_type' => 'sso', //  登录方式，sso为单点登录，mpop为多点登录
             'sso_key' => 'uid',
-            'ttl' => 100, // token过期时间，单位为秒
-            'blacklist_cache_ttl' => env('JWT_TTL', 100), // 黑名单缓存token时间，注意：该时间一定要设置比token过期时间要大一点，默认为100秒,最好设置跟过期时间一样
+            'ttl' => 7200, // token过期时间，单位为秒
+            'blacklist_cache_ttl' => env('JWT_TTL', 7200), // 黑名单缓存token时间，注意：该时间一定要设置比token过期时间要大一点，默认为100秒,最好设置跟过期时间一样
         ],
         'application3' => [
+            'secret' => 'application3', // 非对称加密使用字符串,请使用自己加密的字符串
             'login_type' => 'mppo', //  登录方式，sso为单点登录，mpop为多点登录
-            'ttl' => 100, // token过期时间，单位为秒
-            'blacklist_cache_ttl' => env('JWT_TTL', 100), // 黑名单缓存token时间，注意：该时间一定要设置比token过期时间要大一点，默认为100秒,最好设置跟过期时间一样
+            'ttl' => 7200, // token过期时间，单位为秒
+            'blacklist_cache_ttl' => env('JWT_TTL', 7200), // 黑名单缓存token时间，注意：该时间一定要设置比token过期时间要大一点，默认为100秒,最好设置跟过期时间一样
         ]
     ],
     'model' => [ // TODO 支持直接获取某模型的数据
@@ -270,6 +273,8 @@ use Hyperf\HttpServer\Contract\ResponseInterface;
 use Phper666\JWTAuth\JWT;
 use Hyperf\HttpServer\Annotation\Middleware;
 use Phper666\JWTAuth\Middleware\JWTAuthMiddleware;
+use Phper666\JWTAuth\Middleware\JWTAuthSceneDefaultMiddleware;
+use Phper666\JWTAuth\Middleware\JWTAuthSceneApplication1Middleware;
 use Hyperf\Di\Annotation\Inject;
 use Psr\Container\ContainerInterface;
 
@@ -354,7 +359,7 @@ class IndexController
                 'uid' => 1, // 如果使用单点登录，必须存在配置文件中的sso_key的值，一般设置为用户的id
                 'username' => 'xx',
             ];
-            // 使用默认场景登录
+            // 使用application1场景登录
             $token = $this->jwt->setScene('application1')->getToken($userData);
             $data = [
                 'code' => 0,
@@ -384,7 +389,7 @@ class IndexController
                 'uid' => 1, // 如果使用单点登录，必须存在配置文件中的sso_key的值，一般设置为用户的id
                 'username' => 'xx',
             ];
-            // 使用默认场景登录
+            // 使用application2场景登录
             $token = $this->jwt->setScene('application2')->getToken($userData);
             $data = [
                 'code' => 0,
@@ -414,7 +419,7 @@ class IndexController
                 'uid' => 1, // 如果使用单点登录，必须存在配置文件中的sso_key的值，一般设置为用户的id
                 'username' => 'xx',
             ];
-            // 使用默认场景登录
+            // 使用application3场景登录
             $token = $this->jwt->setScene('application3')->getToken($userData);
             $data = [
                 'code' => 0,
@@ -461,12 +466,28 @@ class IndexController
     }
 
     /**
-     * http头部必须携带token才能访问的路由
+     * 只能使用default场景值生成的token访问
      * @GetMapping(path="list")
-     * @Middleware(JWTAuthMiddleware::class)
+     * @Middleware(JWTAuthSceneDefaultMiddleware::class)
      * @return \Psr\Http\Message\ResponseInterface
      */
-    public function getData()
+    public function getDefaultData()
+    {
+        $data = [
+            'code' => 0,
+            'msg' => 'success',
+            'data' => $this->jwt->getParserData()
+        ];
+        return $this->response->json($data);
+    }
+
+    /**
+     * 只能使用application1场景值生成的token访问
+     * @GetMapping(path="list1")
+     * @Middleware(JWTAuthSceneApplication1Middleware::class)
+     * @return \Psr\Http\Message\ResponseInterface
+     */
+    public function getApplication1Data()
     {
         $data = [
             'code' => 0,
@@ -481,8 +502,10 @@ class IndexController
 提供了一个方法     `getParserData` 来获取解析后的 token 数据。
 例如：`$this->jwt->getParserData()`
 还提供了一个工具类，\Phper666\JWTAuth\Util\JWTUtil,里面也有getParserData   
+##### 12、如何支持每个场景生成的token不能互相访问各个应用
+具体你可以查看Phper666\JWTAuth\Middleware\JWTAuthSceneDefaultMiddleware和Phper666\JWTAuth\Middleware\JWTAuthSceneApplication1Middleware这两个中间件，根据这两个中间件你可以编写自己的中间件来支持每个场景生成的token不能互相访问各个应用   
 
-##### 12、建议
+##### 13、建议
 > 目前 `jwt` 抛出的异常目前有两种类型 
 >`Phper666\JwtAuth\Exception\TokenValidException`、    
 >`Phper666\JwtAuth\Exception\JWTException,TokenValidException`  

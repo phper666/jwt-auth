@@ -84,11 +84,12 @@ class JWT extends AbstractJWT
      * @param string|null $token
      * @param bool        $validate
      * @param bool        $verify
+     * @param bool        $independentTokenVerify true时会验证当前场景配置是否是生成当前的token的配置，需要配合自定义中间件实现，false会根据当前token拿到原来的场景配置，并且验证当前token
      * @return bool
      * @throws \Psr\SimpleCache\InvalidArgumentException
      * @throws \Throwable
      */
-    public function checkToken(string $token = null, $validate = true, $verify = true)
+    public function checkToken(string $token = null, $validate = true, $verify = true, $independentTokenVerify = false)
     {
         try {
             if (empty($token)) $token = $this->getHeaderToken();
@@ -97,13 +98,14 @@ class JWT extends AbstractJWT
         } catch (\RuntimeException $e) {
             throw new \RuntimeException($e->getMessage(), $e->getCode(), $e->getPrevious());
         }
-        // 获取token里面的场景值，如果不存在，则使用默认场景值
         $claims = JWTUtil::claimsToArray($token->getClaims());
         // 验证token是否存在黑名单
         if ($config['blacklist_enabled'] && $this->blackList->hasTokenBlack($claims, $config)) throw new TokenValidException('Token authentication does not pass', 401);
 
         if ($validate && !$this->validateToken($token)) throw new TokenValidException('Token authentication does not pass', 401);
 
+        // 获取当前环境的场景配置并且验证该token是否是该配置生成的
+        if ($independentTokenVerify) $config = $this->getSceneConfig($this->getScene());
         if ($verify && !$this->verifyToken($token, $config)) throw new TokenValidException('Token authentication does not pass', 401);
 
         return true;

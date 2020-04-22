@@ -16,11 +16,10 @@ use Phper666\JWTAuth\JWT;
 use Phper666\JWTAuth\Exception\TokenValidException;
 
 /**
- * 通用的中间件，只会验证每个应用是否正确
- * Class JWTAuthMiddleware
+ * Class JWTAuthSceneDefaultMiddleware
  * @package Phper666\JWTAuth\Middleware
  */
-class JWTAuthMiddleware implements MiddlewareInterface
+class JWTAuthSceneDefaultMiddleware implements MiddlewareInterface
 {
     /**
      * @var HttpResponse
@@ -53,7 +52,8 @@ class JWTAuthMiddleware implements MiddlewareInterface
             $token = ucfirst($token);
             $arr = explode("{$this->prefix }", $token);
             $token = $arr[1] ?? '';
-            if (strlen($token) > 0 && $this->jwt->checkToken()) {
+            // 验证该token是否为default场景配置生成的
+            if (strlen($token) > 0 && $this->jwt->setScene('default')->checkToken(null, true, true, true)) {
                 $isValidToken = true;
             }
         }
