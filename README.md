@@ -507,8 +507,8 @@ class IndexController
 
 ##### 13、建议
 > 目前 `jwt` 抛出的异常目前有两种类型 
->`Phper666\JwtAuth\Exception\TokenValidException`、    
->`Phper666\JwtAuth\Exception\JWTException,TokenValidException`  
+>`Phper666\JWTAuth\Exception\TokenValidException`、    
+>`Phper666\JWTAuth\Exception\JWTException,TokenValidException`  
 >异常为 `TokenValidException` 验证失败的异常，会抛出 `401` ,   
 >`JWTException` 异常会抛出 `400`，   
 >最好你们自己在项目异常重新返回错误信息
