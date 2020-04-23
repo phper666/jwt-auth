@@ -8,6 +8,7 @@
 namespace Phper666\JWTAuth\Middleware;
 
 use Hyperf\HttpServer\Contract\ResponseInterface as HttpResponse;
+use Phper666\JWTAuth\Util\JWTUtil;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -49,11 +50,9 @@ class JWTAuthSceneApplication1Middleware implements MiddlewareInterface
         // 根据具体业务判断逻辑走向，这里假设用户携带的token有效
         $token = $request->getHeaderLine('Authorization') ?? '';
         if (strlen($token) > 0) {
-            $token = ucfirst($token);
-            $arr = explode("{$this->prefix }", $token);
-            $token = $arr[1] ?? '';
-            // 验证该token是否为default场景配置生成的
-            if (strlen($token) > 0 && $this->jwt->setScene('application1')->checkToken(null, true, true, true)) {
+            $token = JWTUtil::handleToken($token);
+            // 验证该token是否为application1场景配置生成的
+            if ($token !== false && $this->jwt->setScene('application1')->checkToken($token, true, true, true)) {
                 $isValidToken = true;
             }
         }

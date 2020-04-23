@@ -8,6 +8,7 @@
 namespace Phper666\JWTAuth\Middleware;
 
 use Hyperf\HttpServer\Contract\ResponseInterface as HttpResponse;
+use Phper666\JWTAuth\Util\JWTUtil;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -26,8 +27,6 @@ class JWTAuthMiddleware implements MiddlewareInterface
      * @var HttpResponse
      */
     protected $response;
-
-    protected $prefix = 'Bearer';
 
     protected $jwt;
 
@@ -50,10 +49,8 @@ class JWTAuthMiddleware implements MiddlewareInterface
         // 根据具体业务判断逻辑走向，这里假设用户携带的token有效
         $token = $request->getHeaderLine('Authorization') ?? '';
         if (strlen($token) > 0) {
-            $token = ucfirst($token);
-            $arr = explode("{$this->prefix }", $token);
-            $token = $arr[1] ?? '';
-            if (strlen($token) > 0 && $this->jwt->checkToken()) {
+            $token = JWTUtil::handleToken($token);
+            if ($token !== false && $this->jwt->checkToken($token)) {
                 $isValidToken = true;
             }
         }
