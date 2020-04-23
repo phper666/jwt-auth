@@ -53,7 +53,7 @@ class JWT extends AbstractJWT
             $uniqid = uniqid($this->getScene() . '_', true);
         } else { // 单点登录
             if (empty($claims[$ssoKey])) {
-                throw new JWTException("There is no {$ssoKey} key in the claims", 400);
+                throw new JWTException("There is no {$claims[$ssoKey]} key in the claims", 400);
             }
             $uniqid = $this->getScene() . "_" . $claims[$ssoKey];
         }

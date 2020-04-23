@@ -165,6 +165,6 @@ abstract class AbstractJWT implements JWTInterface
     public function getSceneConfigByToken(string $token)
     {
         $scene = JWTUtil::getParserData($token)[$this->tokenScenePrefix];
-        return $this->config->get("{$this->configPrefix}.{$this->scenePrefix}.{$scene}");
+        return $this->getSceneConfig($scene);
     }
 }
