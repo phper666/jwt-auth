@@ -7,7 +7,8 @@
 3、支持多应用单点登录、多应用多点登录   
 4、修改了命名空间名，原来为`JwtAuth`，现在为`JWTAuth`   
 5、修改了文件名称，原来为`Jwt`,现在为`JWT`,原来为`Blacklist`,现在为`BlackList`   
-6、如有建议欢迎给我邮件，562405704@qq.com   
+6、如有建议欢迎给我邮件，562405704@qq.com  
+7、看了下1.1.x和2.0.x对于这个包没有什么改动，所有我依赖hyperf的组件和版本都写到了composer.json的suggest里面去了,实际使用时你没有require某些组件，那么可能会报错，请自行require suggest里面的组件
 ### 说明：
 
 > `jwt-auth` 支持多应用单点登录、多应用多点登录、多应用支持注销 token(token会失效)、支持多应用刷新 token  
