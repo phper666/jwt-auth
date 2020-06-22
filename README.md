@@ -8,7 +8,31 @@
 4、修改了命名空间名，原来为`JwtAuth`，现在为`JWTAuth`   
 5、修改了文件名称，原来为`Jwt`,现在为`JWT`,原来为`Blacklist`,现在为`BlackList`   
 6、如有建议欢迎给我邮件，562405704@qq.com  
-7、看了下1.1.x和2.0.x对于这个包没有什么改动，所有我依赖hyperf的组件和版本都写到了composer.json的suggest里面去了,实际使用时你没有require某些组件，那么可能会报错，请自行require suggest里面的组件
+7、composer.json不在依赖安装hyperf的包，需要自行依赖安装，具体依赖的包如下：
+  ```
+  "hyperf/utils": "required hyperf/utils ~2.0.0 OR required hyperf/utils ~1.1.0",
+  "hyperf/cache": "required hyperf/cache ~2.0.0 OR required hyperf/cache ~1.1.0",
+  "hyperf/command": "required hyperf/command ~2.0.0 OR required hyperf/command ~1.1.0",
+  "hyperf/config": "required hyperf/config ~2.0.0 OR required hyperf/config ~1.1.0",
+  "hyperf/di": "required hyperf/di ~2.0.0 OR required hyperf/di ~1.1.0"
+  ```
+  为什么要这样做？因为发现1.1.x和2.0.x的升级不影响该包的代码   
+  如果你使用1.1.x,你可以：
+  ```
+  composer require hyperf/utils:~1.0.1
+  composer require hyperf/cache:~1.0.1
+  composer require hyperf/command:~1.0.1
+  composer require hyperf/config:~1.0.1
+  composer require hyperf/di:~1.0.1
+  ```
+  如果你使用2.0.x,你可以：
+  ```
+  composer require hyperf/utils:~2.0.0
+  composer require hyperf/cache:~2.0.0
+  composer require hyperf/command:~2.0.0
+  composer require hyperf/config:~2.0.0
+  composer require hyperf/di:~2.0.0
+  ```
 ### 说明：
 
 > `jwt-auth` 支持多应用单点登录、多应用多点登录、多应用支持注销 token(token会失效)、支持多应用刷新 token  
