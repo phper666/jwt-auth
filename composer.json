@@ -28,27 +28,21 @@
     "require": {
         "php": ">=7.2",
         "ext-swoole": ">=4.4",
-        "hyperf/utils": "~1.1.0",
-        "hyperf/framework": "~1.1.0",
-        "hyperf/di": "~1.1.0",
-        "hyperf/cache": "~1.1.0",
         "lcobucci/jwt": "^3.2",
         "nesbot/carbon": "^1.0 || ^2.0"
     },
-    "require-dev": {
-        "friendsofphp/php-cs-fixer": "^2.14",
-        "hyperf/testing": "~1.1.0",
-        "phpstan/phpstan": "^0.10.5",
-        "swoft/swoole-ide-helper": "dev-master"
+    "require-dev": {},
+    "suggest": {
+        "hyperf/utils": "required hyperf/utils ~2.0.0 OR required hyperf/utils ~1.1.0",
+        "hyperf/cache": "required hyperf/cache ~2.0.0 OR required hyperf/cache ~1.1.0",
+        "hyperf/command": "required hyperf/command ~2.0.0 OR required hyperf/command ~1.1.0",
+        "hyperf/config": "required hyperf/config ~2.0.0 OR required hyperf/config ~1.1.0",
+        "hyperf/di": "required hyperf/di ~2.0.0 OR required hyperf/di ~1.1.0"
     },
     "config": {
         "sort-packages": true
     },
-    "scripts": {
-        "test": "co-phpunit -c phpunit.xml --colors=always",
-        "analyze": "phpstan analyse --memory-limit 300M -l 0 ./src",
-        "cs-fix": "php-cs-fixer fix $1"
-    },
+    "scripts": {},
     "extra": {
         "hyperf": {
             "config": "Phper666\\JwtAuth\\ConfigProvider"

@@ -7,34 +7,38 @@
  */
 
 namespace Phper666\JwtAuth;
-
-use Hyperf\Di\Annotation\AbstractAnnotation;
+use Hyperf\Di\Annotation\Inject;
 use Lcobucci\JWT\Token;
 use Phper666\JwtAuth\Helper\Utils;
-use Phper666\JwtAuth\Traits\CommonTrait;
+use Psr\SimpleCache\CacheInterface;
 
 /**
  * https://github.com/phper666/jwt-auth
  * author LI Yuzhao <562405704@qq.com>
  */
-class Blacklist extends AbstractAnnotation
+class Blacklist
 {
-    use CommonTrait;
+    /**
+     * @Inject()
+     * @var CacheInterface
+     */
+    public $storage;
 
     /**
-     * 把token加入到黑名单中
-     * @return $claims
+     * @param Token $token
+     * @param array $config
+     * @return mixed
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
-    public function add(Token $token)
+    public function add(Token $token, array $config)
     {
-        $claims = $this->claimsToArray($token->getClaims());
+        $claims = Utils::claimsToArray($token->getClaims());
         $jti = $claims['jti'];
-        if ($this->enalbed) {
+        if ($config['blacklist_enabled']) {
             $this->storage->set(
                 $jti,
-                ['valid_until' => $this->getGraceTimestamp()],
-                $this->getSecondsUntilExpired($claims)
+                ['valid_until' => $this->getGraceTimestamp($config)],
+                $this->getSecondsUntilExpired($claims, $config)
             );
         }
 
@@ -42,13 +46,11 @@ class Blacklist extends AbstractAnnotation
     }
 
     /**
-     * Get the number of seconds until the token expiry.
-     *
-     * @param  \Tymon\JWTAuth\Payload  $payload
-     *
+     * @param       $claims
+     * @param array $config
      * @return int
      */
-    protected function getSecondsUntilExpired($claims)
+    protected function getSecondsUntilExpired($claims, array $config)
     {
         $exp = Utils::timestamp($claims['exp']);
         $iat = Utils::timestamp($claims['iat']);
@@ -56,7 +58,7 @@ class Blacklist extends AbstractAnnotation
         // get the latter of the two expiration dates and find
         // the number of minutes until the expiration date,
         // plus 1 minute to avoid overlap
-        return $exp->max($iat->addSeconds($this->cacheTTL))->addSecond()->diffInSeconds();
+        return $exp->max($iat->addSeconds($config['blacklist_cache_ttl']))->addSecond()->diffInSeconds();
     }
 
     /**
@@ -65,10 +67,10 @@ class Blacklist extends AbstractAnnotation
      *
      * @return int
      */
-    protected function getGraceTimestamp()
+    protected function getGraceTimestamp(array $config)
     {
-        if ($this->loginType == 'sso') $this->gracePeriod = 0;
-        return Utils::now()->addSeconds($this->gracePeriod)->getTimestamp();
+        if ($config['login_type'] == 'sso') $config['blacklist_grace_period'] = 0;
+        return Utils::now()->addSeconds($config['blacklist_grace_period'])->getTimestamp();
     }
 
     /**
@@ -77,15 +79,15 @@ class Blacklist extends AbstractAnnotation
      * @return bool
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
-    public function has($claims)
+    public function has($claims, array $config)
     {
-        if ($this->enalbed && $this->loginType == 'mpop') {
+        if ($config['blacklist_enabled'] && $config['login_type'] == 'mpop') {
             $val = $this->storage->get($claims['jti']);
             // check whether the expiry + grace has past
             return !empty($val) && !Utils::isFuture($val['valid_until']);
         }
 
-        if ($this->enalbed && $this->loginType == 'sso') {
+        if ($config['blacklist_enabled'] && $config['login_type'] == 'sso') {
             $val = $this->storage->get($claims['jti']);
             // 这里为什么要大于等于0，因为在刷新token时，缓存时间跟签发时间可能一致，详细请看刷新token方法
             $isFuture = ($claims['iat'] - $val['valid_until']) >= 0;
@@ -116,29 +118,5 @@ class Blacklist extends AbstractAnnotation
         $this->storage->clear();
 
         return true;
-    }
-
-    /**
-     * Set the cache time limit.
-     *
-     * @param  int  $ttl
-     *
-     * @return $this
-     */
-    public function setCacheTTL($ttl)
-    {
-        $this->cacheTTL = (int) $ttl;
-
-        return $this;
-    }
-
-    /**
-     * Get the cache time limit.
-     *
-     * @return int
-     */
-    public function getCacheTTL()
-    {
-        return $this->cacheTTL;
     }
 }

@@ -62,4 +62,33 @@ class Utils
     {
         return static::timestamp($timestamp)->subSeconds($leeway)->isFuture();
     }
+
+    /**
+     * @param $claims
+     * @return mixed
+     */
+    public static function claimsToArray($claims)
+    {
+        foreach($claims as $k => $v) {
+            $claims[$k] = $v->getValue();
+        }
+
+        return $claims;
+    }
+
+    /**
+     * 处理头部token
+     * @param string $token
+     * @return bool|string
+     */
+    public static function handleHeaderToken(string $prefix, string $token)
+    {
+        if (strlen($token) > 0) {
+            $token = ucfirst($token);
+            $arr = explode($prefix . ' ', $token);
+            $token = $arr[1] ?? '';
+            if (strlen($token) > 0) return $token;
+        }
+        return false;
+    }
 }

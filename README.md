@@ -2,7 +2,32 @@
 ### 采用基于https://github.com/lcobucci/jwt/tree/3.3 进行封装。
 ### 黑名单的设置参考了这篇文章https://learnku.com/articles/17883
 ### 注意：
-由于 `Hyperf` 可以升级 `1.1` 版本，如果你用 `1.1` 版本，请需要修改 `jwt-auth` 的 `composer.json` 文件，把依赖 `Hyperf` 的组件版本全部改为 `~1.1.0` 或者使用 `jwt-auth` 的 `^2.0.1` 版本，这个版本是针对 `Hyperf` 的 `1.1` 版本的
+1、由于 `Hyperf` 可以升级 `1.1` 版本，如果你用 `1.1` 版本，请需要修改 `jwt-auth` 的 `composer.json` 文件，把依赖 `Hyperf` 的组件版本全部改为 `~1.1.0` 或者使用 `jwt-auth` 的 `^2.0.1` 版本，这个版本是针对 `Hyperf` 的 `1.1` 版本的   
+2、composer.json不在依赖安装hyperf的包，需要自行依赖安装，具体依赖的包如下：
+```
+"hyperf/utils": "required hyperf/utils ~2.0.0 OR required hyperf/utils ~1.1.0",
+"hyperf/cache": "required hyperf/cache ~2.0.0 OR required hyperf/cache ~1.1.0",
+"hyperf/command": "required hyperf/command ~2.0.0 OR required hyperf/command ~1.1.0",
+"hyperf/config": "required hyperf/config ~2.0.0 OR required hyperf/config ~1.1.0",
+"hyperf/di": "required hyperf/di ~2.0.0 OR required hyperf/di ~1.1.0"
+```
+为什么要这样做？因为发现1.1.x和2.0.x的升级不影响该包的代码   
+如果你使用1.1.x,你可以：
+```
+composer require hyperf/utils:~1.0.1
+composer require hyperf/cache:~1.0.1
+composer require hyperf/command:~1.0.1
+composer require hyperf/config:~1.0.1
+composer require hyperf/di:~1.0.1
+```
+如果你使用2.0.x,你可以：
+```
+composer require hyperf/utils:~2.0.0
+composer require hyperf/cache:~2.0.0
+composer require hyperf/command:~2.0.0
+composer require hyperf/config:~2.0.0
+composer require hyperf/di:~2.0.0
+```
 ### 说明：
 
 > `jwt-auth` 支持单点登录、多点登录、支持注销 token(token会失效)、支持刷新 token  
