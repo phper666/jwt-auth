@@ -19,7 +19,7 @@
 为什么要这样做？因为发现1.1.x和2.0.x的升级不影响该包的代码   
 如果你使用hyperf 1.1.x,你可以：
 ```
-composer require phper666/jwt-auth:~2.0.1
+composer require phper666/jwt-auth:~3.0.0
 composer require hyperf/utils:~1.0.1
 composer require hyperf/cache:~1.0.1
 composer require hyperf/command:~1.0.1
@@ -28,7 +28,7 @@ composer require hyperf/di:~1.0.1
 ```
 如果你使用hyperf 2.0.x,你可以：
 ```
-composer require phper666/jwt-auth:~2.0.1
+composer require phper666/jwt-auth:~3.0.0
 composer require hyperf/utils:~2.0.0
 composer require hyperf/cache:~2.0.0
 composer require hyperf/command:~2.0.0
