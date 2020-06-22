@@ -17,7 +17,6 @@
 "hyperf/di": "required hyperf/di ~2.0.0 OR required hyperf/di ~1.1.0"
 ```
 为什么要这样做？因为发现1.1.x和2.0.x的升级不影响该包的代码   
-如果你使用1.1.x,你可以：
 如果你使用hyperf 1.1.x,你可以：
 ```
 composer require phper666/jwt-auth:~2.0.1
