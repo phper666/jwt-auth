@@ -1,3 +1,4 @@
+### 很抱歉，由于我的个人失误导致3.0.3版本的发布使用了master的分支，所以导致代码回滚到了2.0.x，非常抱歉，已经发布了最新的3.0.4，使用了3.0.x最新的代码分支，使用~3.0.0就能更新~
 ### 建议使用3.x版本,具体请切换3.0.1的分支查看
 ### 基于Hyperf(https://doc.hyperf.io/#/zh/README) 框架的 jwt 鉴权(json web token)组件。
 ### 采用基于https://github.com/lcobucci/jwt/tree/3.3 进行封装。
