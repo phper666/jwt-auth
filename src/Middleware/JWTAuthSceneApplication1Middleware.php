@@ -46,20 +46,24 @@ class JWTAuthSceneApplication1Middleware implements MiddlewareInterface
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $isValidToken = false;
-        // 根据具体业务判断逻辑走向，这里假设用户携带的token有效
-        $token = $request->getHeaderLine('Authorization') ?? '';
-        if (strlen($token) > 0) {
-            $token = JWTUtil::handleToken($token);
-            // 验证该token是否为application1场景配置生成的
-            if ($token !== false && $this->jwt->setScene('application1')->checkToken($token, true, true, true)) {
-                $isValidToken = true;
+        try {
+            $isValidToken = false;
+            // 根据具体业务判断逻辑走向，这里假设用户携带的token有效
+            $token = $request->getHeaderLine('Authorization') ?? '';
+            if (strlen($token) > 0) {
+                $token = JWTUtil::handleToken($token);
+                // 验证该token是否为application1场景配置生成的
+                if ($token !== false && $this->jwt->setScene('application1')->checkToken($token, true, true, true)) {
+                    $isValidToken = true;
+                }
             }
-        }
-        if ($isValidToken) {
-            return $handler->handle($request);
-        }
+            if ($isValidToken) {
+                return $handler->handle($request);
+            }
 
-        throw new TokenValidException('Token authentication does not pass', 401);
+            throw new TokenValidException('Token authentication does not pass', 401);
+        }catch (\Exception $e) {
+            throw new TokenValidException('Token authentication does not pass', 401);
+        }
     }
 }
