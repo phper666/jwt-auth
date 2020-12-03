@@ -45,19 +45,23 @@ class JWTAuthMiddleware implements MiddlewareInterface
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $isValidToken = false;
-        // 根据具体业务判断逻辑走向，这里假设用户携带的token有效
-        $token = $request->getHeaderLine('Authorization') ?? '';
-        if (strlen($token) > 0) {
-            $token = JWTUtil::handleToken($token);
-            if ($token !== false && $this->jwt->checkToken($token)) {
-                $isValidToken = true;
+        try {
+            $isValidToken = false;
+            // 根据具体业务判断逻辑走向，这里假设用户携带的token有效
+            $token = $request->getHeaderLine('Authorization') ?? '';
+            if (strlen($token) > 0) {
+                $token = JWTUtil::handleToken($token);
+                if ($token !== false && $this->jwt->checkToken($token)) {
+                    $isValidToken = true;
+                }
             }
-        }
-        if ($isValidToken) {
-            return $handler->handle($request);
-        }
+            if ($isValidToken) {
+                return $handler->handle($request);
+            }
 
-        throw new TokenValidException('Token authentication does not pass', 401);
+            throw new TokenValidException('Token authentication does not pass', 401);
+        }catch (\Exception $e) {
+            throw new TokenValidException('Token authentication does not pass', 401);
+        }
     }
 }
