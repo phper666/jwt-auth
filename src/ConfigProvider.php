@@ -9,8 +9,7 @@ class ConfigProvider
     public function __invoke(): array
     {
         return [
-            'dependencies' => [
-            ],
+            'dependencies' => [],
             'commands' => [
             ],
             'listeners' => [],

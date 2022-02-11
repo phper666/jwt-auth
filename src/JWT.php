@@ -2,53 +2,144 @@
 declare(strict_types=1);
 
 namespace Phper666\JWTAuth;
+
+use Hyperf\Contract\ConfigInterface;
 use Hyperf\HttpServer\Contract\RequestInterface;
+use Lcobucci\Clock\SystemClock;
+use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer;
-use Lcobucci\JWT\Signer\Key;
+use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Token;
+use Lcobucci\JWT\Token\DataSet;
+use Lcobucci\JWT\Token\Plain;
+use Lcobucci\JWT\Token\RegisteredClaims;
+use Lcobucci\JWT\Validation\Constraint\IdentifiedBy;
+use Lcobucci\JWT\Validation\Constraint\IssuedBy;
+use Lcobucci\JWT\Validation\Constraint\LooseValidAt;
+use Lcobucci\JWT\Validation\Constraint\PermittedFor;
+use Lcobucci\JWT\Validation\Constraint\RelatedTo;
+use Lcobucci\JWT\Validation\Constraint\SignedWith;
+use Lcobucci\JWT\Validation\Constraint\StrictValidAt;
+use Phper666\JWTAuth\Constant\JWTConstant;
 use Phper666\JWTAuth\Exception\JWTException;
 use Phper666\JWTAuth\Exception\TokenValidException;
 use Phper666\JWTAuth\Util\JWTUtil;
-use Psr\Container\ContainerInterface;
+use Phper666\JWTAuth\Util\TimeUtil;
+use Psr\SimpleCache\CacheInterface;
+use ReflectionClass;
 
 /**
  * Created by PhpStorm.
  * User: liyuzhao
- * Date: 2020/4/21
+ * Date: 2021/12/08
  * Time: 1:36 下午
  */
 class JWT extends AbstractJWT
 {
+    private $supportAlgs = [
+        // 非对称算法
+        'RS256' => 'Lcobucci\JWT\Signer\Rsa\Sha256',
+        'RS384' => 'Lcobucci\JWT\Signer\Rsa\Sha384',
+        'RS512' => 'Lcobucci\JWT\Signer\Rsa\Sha512',
+        'ES256' => 'Lcobucci\JWT\Signer\Ecdsa\Sha256',
+        'ES384' => 'Lcobucci\JWT\Signer\Ecdsa\Sha384',
+        'ES512' => 'Lcobucci\JWT\Signer\Ecdsa\Sha512',
+
+        // 对称算法
+        'HS256' => 'Lcobucci\JWT\Signer\Hmac\Sha256',
+        'HS384' => 'Lcobucci\JWT\Signer\Hmac\Sha384',
+        'HS512' => 'Lcobucci\JWT\Signer\Hmac\Sha512',
+    ];
+
     /**
-     * @var RequestInterface
+     * @var string
+     */
+    private $jwtClaimScene = 'jwt_scene';
+
+    private $scene = 'default';
+
+    /**
+     * @var RequestInterface|mixed
      */
     public $request;
 
     /**
-     * @var BlackList
+     * @var ConfigInterface|mixed
      */
-    public $blackList;
+    private $jwtConfig;
 
-    public function __construct(ContainerInterface $container, BlackList $blackList)
+    /**
+     * @var mixed|CacheInterface
+     */
+    private $cache;
+
+    /**
+     * @var Configuration
+     */
+    private $lcobucciJwtConfiguration;
+
+    /**
+     * @var PathMatch
+     */
+    private $pathMatch;
+
+    public function __construct()
     {
-        parent::__construct($container);
-        $this->request = $this->getContainer()->get(RequestInterface::class);
-        $this->blackList = $blackList;
+        $config = make(ConfigInterface::class);
+        $jwtConfig = $config->get(JWTConstant::CONFIG_NAME, []);
+        $scenes = $jwtConfig['scene'];
+        foreach ($scenes as $key => $scene) {
+            $sceneConfig = array_merge($jwtConfig, $scene);
+            $sceneConfigKey = JWTConstant::CONFIG_NAME . '.' .$key;
+            $config->set($sceneConfigKey, $sceneConfig);
+        }
+
+        $this->jwtConfig = $config->get(JWTConstant::CONFIG_NAME, []);
+        $this->cache = make(CacheInterface::class);
+        $this->request = make(RequestInterface::class);
+        $this->pathMatch = make(PathMatch::class);
+    }
+
+    /**
+     * @param string $scene
+     * @return $this
+     */
+    protected function initConfiguration(string $scene) {
+        $this->setScene($scene);
+        $jwtSceneConfig = $this->getJwtSceneConfig($scene);
+        $useAlgsClass = $this->supportAlgs[$jwtSceneConfig['alg']];
+        if (!$this->isAsymmetric()) {
+            $this->lcobucciJwtConfiguration = Configuration::forSymmetricSigner(
+                new $useAlgsClass(),
+                InMemory::base64Encoded(base64_encode($jwtSceneConfig['secret']))
+            );
+        } else {
+            $this->lcobucciJwtConfiguration = Configuration::forAsymmetricSigner(
+                new $useAlgsClass(),
+                InMemory::file($jwtSceneConfig['keys']['private'], $jwtSceneConfig['keys']['passphrase']),
+                InMemory::file($jwtSceneConfig['keys']['public'])
+            );
+        }
+        return $this;
     }
 
     /**
      * 生成token
+     *
      * @param array $claims
-     * @param bool $isInsertSsoBlack 是否把单点登录生成的token加入黑名单
-     * @param bool  $isConversionString 是否把token强制转换成string类型
      * @return Token|string
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
-    public function getToken(array $claims, $isInsertSsoBlack = true, $isConversionString = true)
+    public function getToken(string $scene, array $claims): Plain
     {
-        $config = $this->getSceneConfig($this->getScene());
-        $loginType = $config['login_type'];
-        $ssoKey = $config['sso_key'];
+        // 初始化lcobucci jwt config
+        $this->initConfiguration($scene);
+        $claims[$this->jwtClaimScene] = $scene; // 加入场景值
+
+        $jwtSceneConfig = $this->getJwtSceneConfig();
+        $loginType = $jwtSceneConfig['login_type'];
+        $ssoKey = $jwtSceneConfig['sso_key'];
+        $issuedBy = $jwtSceneConfig[RegisteredClaims::ISSUER] ?? 'phper666/jwt';
         if ($loginType == 'mpop') { // 多点登录,场景值加上一个唯一id
             $uniqid = uniqid($this->getScene() . '_', true);
         } else { // 单点登录
@@ -58,204 +149,402 @@ class JWT extends AbstractJWT
             $uniqid = $this->getScene() . "_" . $claims[$ssoKey];
         }
 
-        $signer = new $config['supported_algs'][$config['alg']];
-        $time = time();
-        $builder = JWTUtil::getBuilder()
-            ->identifiedBy($uniqid) // 设置jwt的jti
-            ->issuedAt($time)// (iat claim) 发布时间
-            ->canOnlyBeUsedAfter($time)// (nbf claim) 在此之前不可用
-            ->expiresAt($time + $config['ttl']);// (exp claim) 到期时间
-
-        $claims[$this->tokenScenePrefix] = $this->getScene(); // 加入场景值
+        $clock = SystemClock::fromUTC();
+        $now = $clock->now();
+        $expiresAt = $clock->now()->modify('+' . $jwtSceneConfig['ttl'] . ' second');
+        $builder = $this->lcobucciJwtConfiguration->builder();
         foreach ($claims as $k => $v) {
             $builder = $builder->withClaim($k, $v); // 自定义数据
         }
-
-        $token = $builder->getToken($signer, $this->getKey($config)); // Retrieves the generated token
-
-        // 单点登录要把所有的以前生成的token都失效
-        if ($loginType == 'sso' && $isInsertSsoBlack) $this->blackList->addTokenBlack($token, $config);
-
-        return $isConversionString ? (string)$token : $token;
+        $builder = $builder
+            ->issuedBy($issuedBy)
+            // Configures the id (jti claim) 设置jwt的jti
+            ->identifiedBy($uniqid)
+            // Configures the time that the token was issue (iat claim) 发布时间
+            ->issuedAt($now)
+            // Configures the time that the token can be used (nbf claim) 在此之前不可用
+            ->canOnlyBeUsedAfter($now)
+            // Configures the expiration time of the token (exp claim) 到期时间
+            ->expiresAt($expiresAt);
+        return $builder->getToken($this->lcobucciJwtConfiguration->signer(), $this->lcobucciJwtConfiguration->signingKey());
     }
 
     /**
-     * 验证token
-     * @param string|null $token
-     * @param bool        $validate
-     * @param bool        $verify
-     * @param bool        $independentTokenVerify true时会验证当前场景配置是否是生成当前的token的配置，需要配合自定义中间件实现，false会根据当前token拿到原来的场景配置，并且验证当前token
-     * @return bool
-     * @throws \Psr\SimpleCache\InvalidArgumentException
-     * @throws \Throwable
+     * 获取当前场景的配置
+     *
+     * @return mixed
      */
-    public function checkToken(string $token = null, $validate = true, $verify = true, $independentTokenVerify = false)
-    {
-        try {
-            if (empty($token)) $token = $this->getHeaderToken();
-            $config = $this->getSceneConfigByToken($token);
-            $token = $this->getTokenObj($token);
-        } catch (\RuntimeException $e) {
-            throw new \RuntimeException($e->getMessage(), $e->getCode(), $e->getPrevious());
+    public function getJwtSceneConfig(string $scene = null) {
+        if ($scene == null) {
+            return $this->jwtConfig[$this->getScene()];
         }
-        $claims = JWTUtil::claimsToArray($token->getClaims());
+        return $this->jwtConfig[$scene];
+    }
+
+    /**
+     * @param string $token
+     * @return bool
+     */
+    public function verifyToken(string $token): bool
+    {
+        if($token == null) {
+            $token = JWTUtil::getToken($this->request);
+        }
+
+        $token = $this->tokenToPlain($token);
+        $this->initConfiguration($this->getSceneByTokenPlain($token));
+
+        $sceneConfig = $this->getSceneConfigByToken($token);
+        $constraints = $this->validationConstraints($token->claims(), $this->lcobucciJwtConfiguration);
+        if (!$this->lcobucciJwtConfiguration->validator()->validate($token, ...$constraints)) {
+            throw new TokenValidException('Token authentication does not pass', 400);
+        }
+
         // 验证token是否存在黑名单
-        if ($config['blacklist_enabled'] && $this->blackList->hasTokenBlack($claims, $config)) throw new TokenValidException('Token authentication does not pass', 401);
-
-        if ($validate && !$this->validateToken($token)) throw new TokenValidException('Token authentication does not pass', 401);
-
-        // 获取当前环境的场景配置并且验证该token是否是该配置生成的
-        if ($independentTokenVerify) $config = $this->getSceneConfig($this->getScene());
-        if ($verify && !$this->verifyToken($token, $config)) throw new TokenValidException('Token authentication does not pass', 401);
+        if ($sceneConfig['blacklist_enabled'] && $this->hasTokenBlack($token)) {
+            throw new TokenValidException('Token authentication does not pass', 400);
+        }
 
         return true;
     }
 
     /**
+     * @param string $scene
+     * @param string $token
+     * @return bool
+     */
+    public function verifyTokenAndScene(string $scene, string $token): bool
+    {
+        if($token == null) {
+            $token = JWTUtil::getToken($this->request);
+        }
+        $plainToken = $this->tokenToPlain($token);
+        $tokenScene = $this->getSceneByTokenPlain($plainToken);
+        if ($scene != $tokenScene) {
+            throw new JWTException('The token does not support the current scene', 400);
+        }
+
+        return $this->verifyToken($token);
+    }
+
+    /**
+     * 检查当前路由是否需要对jwt进行校验
+     *
+     * @param string $requestMethod
+     * @param string $requestPath
+     * @return bool
+     */
+    public function matchRoute(?string $scene, string $requestMethod, string $requestPath): bool
+    {
+        $noCheckRoute = $this->jwtConfig['no_check_route'] ?? [];
+        if ($scene != null) {
+            $noCheckRoute = $this->jwtConfig[$scene]['no_check_route'] ?? [];
+        }
+
+        return $this->pathMatch->matchRoute($noCheckRoute, $requestMethod, $requestPath);
+    }
+
+
+    /**
+     * 判断token是否已经加入黑名单
+     *
+     * @param $claims
+     * @return bool
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
+    public function hasTokenBlack(Plain $token): bool
+    {
+        $sceneConfig = $this->getSceneConfigByToken($token);
+        if ($sceneConfig['blacklist_enabled']) {
+            $claims = $token->claims();
+            $cacheKey = $this->getCacheKey($sceneConfig, $claims->get(RegisteredClaims::ID));
+            $cacheValue = $this->cache->get($cacheKey);
+            if ($sceneConfig['login_type'] == JWTConstant::MPOP) {
+                return !empty($cacheValue['valid_until']) && !TimeUtil::isFuture($cacheValue['valid_until']);
+            }
+
+            if ($sceneConfig['login_type'] == JWTConstant::SSO) {
+                // 签发时间
+                $iatTime = $claims->get(RegisteredClaims::ISSUED_AT);
+                if (!is_numeric($iatTime)) {
+                    $iatTime = $iatTime->getTimestamp();
+                }
+                if (!empty($cacheValue['valid_until']) && !empty($iatTime)) {
+                    // 这里为什么要大于等于0，因为在刷新token时，缓存时间跟签发时间可能一致，详细请看刷新token方法
+                    return !(($iatTime - $cacheValue['valid_until']) >= 0);
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 把token加入到黑名单中
+     *
+     * @param Token $token
+     * @return mixed
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
+    public function addTokenBlack(Plain $token): bool
+    {
+        $sceneConfig = $this->getSceneConfigByToken($token);
+        $claims = $token->claims();
+        if ($sceneConfig['blacklist_enabled']) {
+            $cacheKey = $this->getCacheKey($sceneConfig, $claims->get(RegisteredClaims::ID));
+            // 单点登录没有宽限时间，直接失效
+            $blacklistGracePeriod = 0;
+            if ($sceneConfig['login_type'] == JWTConstant::MPOP) {
+                $blacklistGracePeriod = $sceneConfig['blacklist_grace_period'];
+            }
+            $expTime = $claims->get(RegisteredClaims::EXPIRATION_TIME);
+            if (!is_numeric($expTime)) {
+                $expTime = $expTime->getTimestamp();
+            }
+
+            $validUntil = TimeUtil::now()->addSeconds($blacklistGracePeriod)->getTimestamp();
+            $expTime = TimeUtil::timestamp($expTime);
+            $nowTime = TimeUtil::now();
+
+            /**
+             * 缓存时间取当前时间跟jwt过期时间的差值，单位秒
+             */
+            $tokenCacheTime = $expTime->max($nowTime)->diffInSeconds();
+            return $this->cache->set(
+                $cacheKey,
+                ['valid_until' => $validUntil],
+                $tokenCacheTime
+            );
+        }
+        return false;
+    }
+
+    /**
      * 刷新token
+     *
      * @return Token
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
-    public function refreshToken(string $token = null)
+    public function refreshToken(string $token = null): Plain
     {
-        if (empty($token)) $token = $this->getHeaderToken();
-        $config = $this->getSceneConfigByToken($token);
-        $claims = $this->blackList->addTokenBlack($this->getTokenObj($token), $config);
-        unset($claims['iat']);
-        unset($claims['nbf']);
-        unset($claims['exp']);
-        unset($claims['jti']);
-        return $this->getToken($claims);
+        if($token == null) {
+            $token = JWTUtil::getToken($this->request);
+        }
+
+        $token = $this->tokenToPlain($token);
+
+        // TODO emm....这里是否要做失败处理?
+        $this->addTokenBlack($token);
+
+        $claims = $token->claims();
+        $data = JWTUtil::claimsToArray($claims);
+        $scene = $this->getSceneByClaims($claims);
+        unset($data[RegisteredClaims::ISSUER]);
+        unset($data[RegisteredClaims::EXPIRATION_TIME]);
+        unset($data[RegisteredClaims::NOT_BEFORE]);
+        unset($data[RegisteredClaims::ISSUED_AT]);
+        unset($data[RegisteredClaims::ID]);
+        // TODO 这里有问题，刷新的token会直接被丢到黑名单里面
+        return $this->getToken($scene, $data);
     }
 
     /**
      * 让token失效
+     *
      * @param string|null $token
      * @return bool
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
-    public function logout(string $token = null)
+    public function logout(string $token = null): bool
     {
-        if (empty($token)) $token = $this->getHeaderToken();
-        $config = $this->getSceneConfigByToken($token);
-        // 如果是sso，并且使当前token失效
-        $ssoSelfExp = false;
-        if ($config['login_type'] == 'sso') $ssoSelfExp = true;
-        $this->blackList->addTokenBlack($this->getTokenObj($token), $config, $ssoSelfExp);
+        if($token == null) {
+            $token = JWTUtil::getToken($this->request);
+        }
+
+        $token = $this->tokenToPlain($token);
+        $this->addTokenBlack($token);
         return true;
     }
 
     /**
      * 获取token动态有效时间
+     *
      * @param string|null $token
      * @return int|mixed
      */
-    public function getTokenDynamicCacheTime(string $token = null)
+    public function getTokenDynamicCacheTime(string $token = null): int
     {
-        $nowTime = time();
-        if (empty($token)) $token = $this->getHeaderToken();
-        $exp = $this->getTokenObj($token)->getClaim('exp', $nowTime);
-        $expTime = $exp - $nowTime;
-        return $expTime;
+        if($token == null) {
+            throw new JWTException("Missing token");
+        }
+
+        $nowTime = TimeUtil::now();
+        $expTime = $this->tokenToPlain($token)->claims()->get(RegisteredClaims::EXPIRATION_TIME, $nowTime);
+        if (!is_numeric($expTime)) {
+            $expTime = $expTime->getTimestamp();
+        }
+        return TimeUtil::now()->setTimestamp($expTime)->max($nowTime)->diffInSeconds();
     }
 
     /**
-     * 获取jwt token解析的data
-     * @param string|null $token
+     * 获取jwt的claims数据
+     *
+     * @param string $token
      * @return array
      */
-    public function getParserData(string $token = null)
+    public function getClaimsByToken(string $token = null): array
     {
-        $arr = [];
-        if (empty($token)) $token = $this->getHeaderToken();
-        $claims = $this->getTokenObj($token)->getClaims();
-        foreach ($claims as $k => $v) {
-            $arr[$k] = $v->getValue();
+        if($token == null) {
+            $token = JWTUtil::getToken($this->request);
         }
-        return $arr;
+
+        return $this->tokenToPlain($token)->claims()->all();
+    }
+
+    public function tokenToPlain(string $token): Plain
+    {
+        if($token == null) {
+            $token = JWTUtil::getToken($this->request);
+        }
+
+        return JWTUtil::getParser()->parse($token);
+    }
+
+    public function setScene(string $scene = 'default'): JWT
+    {
+        $this->scene = $scene;
+        return $this;
+    }
+
+    public function getScene(): string
+    {
+        return $this->scene;
+    }
+
+    public function getCacheKey(array $sceneConfig, string $claimJti): string
+    {
+        return $sceneConfig["cache_prefix"] . ':' . $claimJti;
     }
 
     /**
      * 获取缓存时间
+     *
      * @return mixed
      */
-    public function getTTL(string $token = null)
+    public function getCacheTTL(string $token = null): int
     {
-        if (!empty($token)) $config = $this->getSceneConfigByToken($token);
-        if (empty($token)) $config = $this->getSceneConfig($this->getScene());
-        return (int)$config['ttl'];
-    }
-
-    /**
-     * 获取对应算法需要的key
-     * @param string $type 配置keys里面的键，获取私钥或者公钥。private-私钥，public-公钥
-     * @return Key|null
-     */
-    private function getKey(array $config, string $type = 'private')
-    {
-        $key = NULL;
-        // 对称算法
-        if (in_array($config['alg'], $config['symmetry_algs'])) {
-            $key = new Key($config['secret']);
+        if($token == null) {
+            $token = JWTUtil::getToken($this->request);
         }
 
-        // 非对称
-        if (in_array($config['alg'], $config['asymmetric_algs'])) {
-            $key = $config['keys'][$type];
-            $key = new Key($key);
+        $token = $this->tokenToPlain($token);
+        $claimJti = $token->claims()->get(RegisteredClaims::ID);
+        $sceneConfig = $this->getSceneConfigByToken($token);
+        $cacheKey = $this->getCacheKey($sceneConfig, $claimJti);
+        return $this->cache->get($cacheKey);
+    }
+
+    public function getTTL(string $token): int
+    {
+        if($token == null) {
+            $token = JWTUtil::getToken($this->request);
         }
-        return $key;
+
+        $token = JWTUtil::getParser()->parse($token);
+        $sceneConfig = $this->getSceneConfigByToken($token);
+        return (int)$sceneConfig['ttl'];
     }
 
-    /**
-     * 获取Token对象
-     * @param string|null $token
-     * @return Token
-     */
-    private function getTokenObj(string $token = null)
+    public function getSceneByToken(string $token): bool
     {
-        return JWTUtil::getParser()->parse($token);
-//        if (!empty(str_replace(' ', '', $token))) return JWTUtil::getParser()->parse($token);
-//        return JWTUtil::getParser()->parse($this->getHeaderToken());
-    }
-
-    /**
-     * 获取http头部token
-     * @return bool|mixed|string
-     */
-    private function getHeaderToken()
-    {
-        $token = $this->request->getHeaderLine('Authorization') ?? '';
-        $token = JWTUtil::handleToken($token, $this->tokenPrefix);
-        if ($token === false) throw new JWTException('A token is required', 400);
-        return $token;
-    }
-
-    /**
-     * 验证jwt token的data部分
-     * @param Token $token token object
-     * @return bool
-     */
-    private function validateToken(Token $token, $currentTime = null)
-    {
-        $data = JWTUtil::getValidationData($currentTime);
-        return $token->validate($data);
-    }
-
-    /**
-     * 验证 jwt token
-     * @param Token $token token object
-     * @return bool
-     * @throws \Throwable
-     */
-    private function verifyToken(Token $token, array $config)
-    {
-        $alg = $token->getHeader('alg');
-        if (empty($config['supported_algs'][$alg])) {
-            throw new TokenValidException('Algorithm not supported', 401);
+        if($token == null) {
+            $token = JWTUtil::getToken($this->request);
         }
-        /** @var Signer $signer */
-        $signer = new $config['supported_algs'][$alg];
-        return $token->verify($signer, $this->getKey($config, 'public'));
+        $token = $this->tokenToPlain($token);
+        $scene = $this->getSceneByTokenPlain($token);
+        return $this->jwtConfig[$scene];
+    }
+
+    /**
+     * 获取Signer
+     *
+     * @return Signer
+     */
+    protected function getSigner(): Signer
+    {
+        $jwtSceneConfig = $this->getJwtSceneConfig();
+        $alg = $jwtSceneConfig['alg'];
+        if (! array_key_exists($alg, $this->supportAlgs)) {
+            throw new JWTException('The given supportAlgs could not be found', 400);
+        }
+
+        return new $this->supportAlgs[$alg];
+    }
+
+    /**
+     * 判断是否为非对称算法
+     */
+    protected function isAsymmetric(): bool
+    {
+        $reflect = new ReflectionClass($this->getSigner());
+
+        return $reflect->isSubclassOf(Signer\Rsa::class) || $reflect->isSubclassOf(Signer\Ecdsa::class);
+    }
+
+    /**
+     * https://lcobucci-jwt.readthedocs.io/en/latest/validating-tokens/
+     * JWT 验证时，支持的校验
+     * 'Lcobucci\JWT\Validation\Constraint\IdentifiedBy',
+     * 'Lcobucci\JWT\Validation\Constraint\IssuedBy',
+     * 'Lcobucci\JWT\Validation\Constraint\PermittedFor',
+     * 'Lcobucci\JWT\Validation\Constraint\RelatedTo',
+     * 'Lcobucci\JWT\Validation\Constraint\SignedWith',
+     * 'Lcobucci\JWT\Validation\Constraint\StrictValidAt',
+     * 'Lcobucci\JWT\Validation\Constraint\LooseValidAt'
+     * @return array
+     */
+    protected function validationConstraints(DataSet $claims, Configuration $configuration) {
+
+        $clock = SystemClock::fromUTC();
+        $validationConstraints = [
+            new IdentifiedBy($claims->get(RegisteredClaims::ID)),
+            new IssuedBy($claims->get(RegisteredClaims::ISSUER)),
+            new LooseValidAt($clock),
+            new StrictValidAt($clock),
+            new SignedWith($configuration->signer(), $configuration->signingKey())
+        ];
+        if ($claims->get(RegisteredClaims::AUDIENCE) != null) {
+            $validationConstraints[] = new PermittedFor($claims->get(RegisteredClaims::AUDIENCE));
+        }
+        if ($claims->get(RegisteredClaims::SUBJECT) != null) {
+            $validationConstraints[] = new RelatedTo($claims->get(RegisteredClaims::SUBJECT));
+        }
+        return $validationConstraints;
+    }
+
+    /**
+     * 通过token获取当前场景的配置
+     *
+     * @param Plain $token
+     * @return string
+     */
+    protected function getSceneConfigByToken(Plain $token): array
+    {
+        $scene = $this->getSceneByTokenPlain($token);
+        return $this->jwtConfig[$scene];
+    }
+
+    protected function getSceneByClaims(DataSet $claims) {
+        return $claims->get($this->jwtClaimScene, $this->getScene());
+    }
+
+    /**
+     * @param Plain $token
+     * @return string
+     */
+    protected function getSceneByTokenPlain(Plain $token): string
+    {
+        $claims = $token->claims()->all();
+        return $claims[$this->jwtClaimScene];
     }
 }

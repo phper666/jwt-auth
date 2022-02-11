@@ -8,6 +8,7 @@
 namespace Phper666\JWTAuth\Middleware;
 
 use Hyperf\HttpServer\Contract\ResponseInterface as HttpResponse;
+use Phper666\JWTAuth\Exception\JWTException;
 use Phper666\JWTAuth\Util\JWTUtil;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -17,17 +18,16 @@ use Phper666\JWTAuth\JWT;
 use Phper666\JWTAuth\Exception\TokenValidException;
 
 /**
- * Class JWTAuthSceneDefaultMiddleware
+ * jwt token 校验的中间件，校验场景是否一致
+ * Class JWTAuthApplication2SceneMiddleware
  * @package Phper666\JWTAuth\Middleware
  */
-class JWTAuthSceneDefaultMiddleware implements MiddlewareInterface
+class JWTAuthApplication2SceneMiddleware implements MiddlewareInterface
 {
     /**
      * @var HttpResponse
      */
     protected $response;
-
-    protected $prefix = 'Bearer';
 
     protected $jwt;
 
@@ -46,20 +46,22 @@ class JWTAuthSceneDefaultMiddleware implements MiddlewareInterface
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $isValidToken = false;
-        // 根据具体业务判断逻辑走向，这里假设用户携带的token有效
-        $token = $request->getHeaderLine('Authorization') ?? '';
-        if (strlen($token) > 0) {
-            $token = JWTUtil::handleToken($token);
-            // 验证该token是否为default场景配置生成的
-            if ($token !== false && $this->jwt->setScene('default')->checkToken($token, true, true, true)) {
-                $isValidToken = true;
-            }
-        }
-        if ($isValidToken) {
+        // 判断是否为noCheckRoute
+        $path = $request->getUri()->getPath();
+        $method = $request->getMethod();
+        if ($this->jwt->matchRoute('application2', $method, $path)) {
             return $handler->handle($request);
         }
 
-        throw new TokenValidException('Token authentication does not pass', 401);
+        $token = $request->getHeaderLine('Authorization') ?? '';
+        if ($token == "") {
+            throw new JWTException('Missing token', 400);
+        }
+        $token = JWTUtil::handleToken($token);
+        if ($token !== false && $this->jwt->verifyTokenAndScene('application2', $token)) {
+            return $handler->handle($request);
+        }
+
+        throw new TokenValidException('Token authentication does not pass', 400);
     }
 }

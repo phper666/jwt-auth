@@ -3,168 +3,128 @@ declare(strict_types=1);
 /**
  * Created by PhpStorm.
  * User: liyuzhao
- * Date: 2020/4/21
- * Time: 9:17 下午
+ * Date: 2021/12/29
+ * Time: 10:07 下午
  */
 
 namespace Phper666\JWTAuth;
 
-use Hyperf\Contract\ConfigInterface;
-use Phper666\JWTAuth\Util\JWTUtil;
-use Psr\Container\ContainerInterface;
+use Lcobucci\JWT\Token;
+use Lcobucci\JWT\Token\Plain;
 
-
-abstract class AbstractJWT implements JWTInterface
+abstract class AbstractJWT
 {
     /**
-     * @var string
+     * 获取jwt token
+     *
+     * @param array $claims
+     * @return Plain
      */
-    public $tokenPrefix = 'Bearer';
-
-    public $tokenScenePrefix = 'jwt_scene';
+    abstract function getToken(string $scene, array $claims): Plain;
 
     /**
-     * @var array Supported algorithms
+     * 对jwt token进行验证
+     *
+     * @param string $token
+     * @return bool
      */
-    private $supportedAlgs = [
-        'HS256' => 'Lcobucci\JWT\Signer\Hmac\Sha256',
-        'HS384' => 'Lcobucci\JWT\Signer\Hmac\Sha384',
-        'HS512' => 'Lcobucci\JWT\Signer\Hmac\Sha512',
-        'ES256' => 'Lcobucci\JWT\Signer\Ecdsa\Sha256',
-        'ES384' => 'Lcobucci\JWT\Signer\Ecdsa\Sha384',
-        'ES512' => 'Lcobucci\JWT\Signer\Ecdsa\Sha512',
-        'RS256' => 'Lcobucci\JWT\Signer\Rsa\Sha256',
-        'RS384' => 'Lcobucci\JWT\Signer\Rsa\Sha384',
-        'RS512' => 'Lcobucci\JWT\Signer\Rsa\Sha512',
-    ];
-
-    // 对称算法名称
-    private $symmetryAlgs = [
-        'HS256',
-        'HS384',
-        'HS512'
-    ];
-
-    // 非对称算法名称
-    private $asymmetricAlgs = [
-        'RS256',
-        'RS384',
-        'RS512',
-        'ES256',
-        'ES384',
-        'ES512',
-    ];
+    abstract function verifyToken(string $token): bool;
 
     /**
-     * 当前token生成token的场景值
-     * @var string
+     * 对jwt token进行验证
+     *
+     * @param string $token
+     * @return bool
      */
-    private $scene = 'default';
+    abstract function verifyTokenAndScene(string $scene, string $token): bool;
 
     /**
-     * @var string
-     */
-    private $scenePrefix = 'scene';
-
-    /**
-     * @var ContainerInterface
-     */
-    private $container;
-
-    /**
-     * @var ConfigInterface
-     */
-    private $config;
-
-    /**
-     * jwt配置前缀
-     * @var string
-     */
-    private $configPrefix = 'jwt';
-
-    public function __construct(ContainerInterface $container)
-    {
-        $this->container = $container;
-        $this->config = $this->container->get(ConfigInterface::class);
-
-        // 合并场景配置，并且兼容2.0.6以下的配置
-        $config = $this->config->get($this->configPrefix);
-        if (empty($config['supported_algs'])) $config['supported_algs'] = $this->supportedAlgs;
-        if (empty($config['symmetry_algs'])) $config['symmetry_algs'] = $this->symmetryAlgs;
-        if (empty($config['asymmetric_algs'])) $config['asymmetric_algs'] = $this->asymmetricAlgs;
-        if (empty($config['blacklist_prefix'])) $config['blacklist_prefix'] = 'phper666_jwt';
-        $scenes = $config['scene'];
-        unset($config['scene']);
-        foreach ($scenes as $key => $scene) {
-            $sceneConfig = array_merge($config, $scene);
-            $this->setSceneConfig($key, $sceneConfig);
-        }
-    }
-
-    /**
-     * @param ContainerInterface $container
-     * @return $this
-     */
-    public function setContainer(ContainerInterface $container)
-    {
-        $this->container = $container;
-        return $this;
-    }
-
-    /**
-     * @return ContainerInterface
-     */
-    public function getContainer()
-    {
-        return $this->container;
-    }
-
-    /**
-     * 设置场景值
+     * 检查当前路由是否需要做token校验
+     *
      * @param string $scene
+     * @param string $requestMethod
+     * @param string $requestPath
+     * @return bool
      */
-    public function setScene(string $scene)
-    {
-        $this->scene = $scene;
-        return $this;
-    }
+    abstract function matchRoute(string $scene, string $requestMethod, string $requestPath): bool;
 
     /**
-     * 获取当前场景值
+     * 获取jwt中的场景值
+     *
+     * @param string $token
+     * @return bool
+     */
+    abstract function getSceneByToken(string $token): bool;
+
+    /**
+     * 刷新jwt token
+     *
+     * @param string $token
+     * @return Plain
+     */
+    abstract function refreshToken(string $token): Plain;
+
+    /**
+     * 获取JWT token的claims部分
+     *
+     * @param string $token
+     * @return array
+     */
+    abstract function getClaimsByToken(string $token): array;
+
+    abstract function tokenToPlain(string $token): Plain;
+
+    /**
+     * 获取jwt的有效时间
+     *
+     * @param string $token
+     * @return int
+     */
+    abstract function getTTL(string $token): int;
+
+    /**
+     * 获取jwt的剩余的有效时间
+     *
+     * @param string $token
+     * @return int
+     */
+    abstract function getTokenDynamicCacheTime(string $token): int;
+
+    /**
+     * 使当前jwt失效
+     *
+     * @param string $token
+     * @return bool
+     */
+    abstract function logout(string $token): bool;
+
+    /**
+     * token加入黑名单
+     *
+     * @param Token $token
+     * @return bool
+     */
+    abstract function addTokenBlack(Plain $token): bool;
+
+    /**
+     * 黑名单是否存在当前token
+     *
+     * @param array $claims
+     * @return bool
+     */
+    abstract function hasTokenBlack(Plain $token): bool;
+
+    /**
+     * @param array $sceneConfig
+     * @param string $claimJti
      * @return string
      */
-    public function getScene()
-    {
-        return $this->scene;
-    }
+    abstract function getCacheKey(array $sceneConfig, string $claimJti): string;
 
     /**
-     * @param string $scene
-     * @param null   $value
-     * @return $this
+     * Get the cache time limit.
+     *
+     * @return int
      */
-    public function setSceneConfig(string $scene = 'default', $value = null)
-    {
-        $this->config->set("{$this->configPrefix}.{$this->scenePrefix}.{$scene}", $value);
-        return $this;
-    }
-
-    /**
-     * @param string $scene
-     * @return mixed
-     */
-    public function getSceneConfig(string $scene = 'default')
-    {
-        return $this->config->get("{$this->configPrefix}.{$this->scenePrefix}.{$scene}");
-    }
-
-    /**
-     * @param string $token
-     * @return mixed
-     */
-    public function getSceneConfigByToken(string $token)
-    {
-        $scene = JWTUtil::getParserData($token)[$this->tokenScenePrefix];
-        return $this->getSceneConfig($scene);
-    }
+    abstract function getCacheTTL(string $token = null): int;
 }

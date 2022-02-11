@@ -1,12 +1,15 @@
 <?php
 declare(strict_types=1);
 namespace Phper666\JWTAuth\Util;
-use Lcobucci\JWT\Builder;
-use Lcobucci\JWT\Claim\Factory as ClaimFactory;
-use Lcobucci\JWT\Parser;
-use Lcobucci\JWT\Parsing\Decoder;
-use Lcobucci\JWT\Parsing\Encoder;
-use Lcobucci\JWT\ValidationData;
+use Lcobucci\JWT\ClaimsFormatter;
+use Lcobucci\JWT\Encoding\JoseEncoder;
+use Lcobucci\JWT\Token\Builder;
+use Lcobucci\JWT\Token\DataSet;
+use Lcobucci\JWT\Token\Parser;
+use Lcobucci\JWT\Decoder;
+use Lcobucci\JWT\Encoder;
+use Lcobucci\JWT\Validation\Validator;
+use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Created by PhpStorm.
@@ -18,33 +21,37 @@ class JWTUtil
 {
     /**
      * claims对象转换成数组
+     *
      * @param $claims
      * @return mixed
      */
-    public static function claimsToArray( $claims)
+    public static function claimsToArray(DataSet $claims)
     {
-        /**
-         *  @var $claim \Lcobucci\JWT\Claim
-         */
-        foreach($claims as $k => $claim) {
-            $claims[$k] = $claim->getValue();
-        }
-        return $claims;
+        return $claims->all();
+    }
+
+    /**
+     * 获取jwt token
+     * @param ServerRequestInterface $request
+     * @return array
+     */
+    public static function getToken(ServerRequestInterface $request)
+    {
+        $token = $request->getHeaderLine('Authorization') ?? '';
+        $token = self::handleToken($token);
+        return $token;
     }
 
     /**
      * 解析token
-     * @param string $token
+     * @param ServerRequestInterface $request
      * @return array
      */
-    public static function getParserData(string $token)
+    public static function getParserData(ServerRequestInterface $request)
     {
-        $arr = [];
-        $claims = self::getParser()->parse($token)->getClaims();
-        foreach ($claims as $k => $v) {
-            $arr[$k] = $v->getValue();
-        }
-        return $arr;
+        $token = $request->getHeaderLine('Authorization') ?? '';
+        $token = self::handleToken($token);
+        return self::getParser()->parse($token)->claims()->all();
     }
 
     /**
@@ -59,35 +66,26 @@ class JWTUtil
             $token = ucfirst($token);
             $arr = explode("{$prefix} ", $token);
             $token = $arr[1] ?? '';
-            if (strlen($token) > 0) return $token;
+            if (strlen($token) > 0) {
+                return $token;
+            }
         }
         return false;
     }
 
     /**
-     * @see [[Lcobucci\JWT\Builder::__construct()]]
-     * @return Builder
-     */
-    public static function getBuilder(Encoder $encoder = null, ClaimFactory $claimFactory = null)
-    {
-        return new Builder($encoder, $claimFactory);
-    }
-
-    /**
-     * @see [[Lcobucci\JWT\Parser::__construct()]]
      * @return Parser
      */
-    public static function getParser(Decoder $decoder = null, ClaimFactory $claimFactory = null)
+    public static function getParser(Decoder $decoder = null): Parser
     {
-        return new Parser($decoder, $claimFactory);
+        if ($decoder == null) {
+            return new Parser(new JoseEncoder());
+        }
+        return new Parser($decoder);
     }
 
-    /**
-     * @see [[Lcobucci\JWT\ValidationData::__construct()]]
-     * @return ValidationData
-     */
-    public static function getValidationData($currentTime = null)
+    public static function getValidator(): Validator
     {
-        return new ValidationData($currentTime);
+        return new Validator();
     }
 }

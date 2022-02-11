@@ -2,33 +2,14 @@
 ### 采用基于https://github.com/lcobucci/jwt/tree/3.3 进行封装。
 ### 黑名单的设置参考了这篇文章https://learnku.com/articles/17883
 ### 注意：
-1、不兼容2.x,如果想要使用3.x，需要重新发布配置，以前的token可能也会失效   
-2、按照hyperf原有的组件规范做重写了该包   
-3、支持多应用单点登录、多应用多点登录   
-4、修改了命名空间名，原来为`JwtAuth`，现在为`JWTAuth`   
-5、修改了文件名称，原来为`Jwt`,现在为`JWT`,原来为`Blacklist`,现在为`BlackList`   
-6、如有建议欢迎给我邮件，562405704@qq.com  
-7、composer.json不在依赖安装hyperf的包，需要自行依赖安装，具体依赖的包如下：
+1、只支持php >= 7.4版本，如果php <= 7.4，请使用3.x版本
+2、支持多应用单点登录、多应用多点登录   
+3、如有建议欢迎给我邮件，562405704@qq.com  
+4、hyperf请使用2.x版本以上
+
+你可以：
 ```
-"hyperf/utils": "required hyperf/utils ~2.0.0 OR required hyperf/utils ~1.1.0",
-"hyperf/cache": "required hyperf/cache ~2.0.0 OR required hyperf/cache ~1.1.0",
-"hyperf/command": "required hyperf/command ~2.0.0 OR required hyperf/command ~1.1.0",
-"hyperf/config": "required hyperf/config ~2.0.0 OR required hyperf/config ~1.1.0",
-"hyperf/di": "required hyperf/di ~2.0.0 OR required hyperf/di ~1.1.0"
-```
-为什么要这样做？因为发现1.1.x和2.0.x的升级不影响该包的代码   
-如果你使用hyperf 1.1.x,你可以：
-```
-composer require phper666/jwt-auth:~3.0.0
-composer require hyperf/utils:~1.0.1
-composer require hyperf/cache:~1.0.1
-composer require hyperf/command:~1.0.1
-composer require hyperf/config:~1.0.1
-composer require hyperf/di:~1.0.1
-```
-如果你使用hyperf 2.0.x,你可以：
-```
-composer require phper666/jwt-auth:~3.0.0
+composer require phper666/jwt-auth:~4.0.0
 composer require hyperf/utils:~2.0.0
 composer require hyperf/cache:~2.0.0
 composer require hyperf/command:~2.0.0
@@ -56,7 +37,7 @@ composer require hyperf/di:~2.0.0
 ##### 1、拉取依赖 
 > 使用 `Hyperf 1.1.x` 版本,则
 ```shell
-composer require phper666/jwt-auth:~3.0.0
+composer require phper666/jwt-auth:~4.0.0
 ``` 
 
 ##### 2、发布配置
@@ -72,6 +53,22 @@ php bin/hyperf.php vendor:publish phper666/jwt-auth
 ```php
 <?php
 return [
+    /**
+     * 不需要检查的路由，如果使用jwt提供的默认中间件，可以对某些不用做检验的路由进行配置，例如登录、退出等
+     * 具体的逻辑可以效仿JWT提供的默认中间件
+     * [
+     *      ["GET", "/index/test"],
+     *      ["**", "/test"]
+     * ]
+     *
+     * 第一个填写请求方法('**'代表支持所有的请求方法)，第二个填写路由路径('/**'代表支持所有的路径)
+     * 如果数组中存在["**", "/**"]，则默认所有的请求路由都不做jwt token的校验，直接放行，如果no_check_route为一个空数组，则
+     * 所有的请求路由都需要做jwt token校验
+     */
+    'no_check_route' => [
+        ["**", "/**"],
+    ],
+
     'login_type' => env('JWT_LOGIN_TYPE', 'mpop'), //  登录方式，sso为单点登录，mpop为多点登录
 
     /**
@@ -79,57 +76,39 @@ return [
      */
     'sso_key' => 'uid',
 
-    'secret' => env('JWT_SECRET', 'phper666'), // 非对称加密使用字符串,请使用自己加密的字符串
+    /**
+     * 只能用于Hmac包下的加密非对称算法，其它的都会使用公私钥
+     */
+    'secret' => env('JWT_SECRET', 'phper666'),
 
     /**
      * JWT 权限keys
      * 对称算法: HS256, HS384 & HS512 使用 `JWT_SECRET`.
-     * 非对称算法: RS256, RS384 & RS512 / ES256, ES384 & ES512 使用下面的公钥私钥.
+     * 非对称算法: RS256, RS384 & RS512 / ES256, ES384 & ES512 使用下面的公钥私钥，需要自己去生成.
      */
     'keys' => [
         'public' => env('JWT_PUBLIC_KEY'), // 公钥，例如：'file:///path/to/public/key'
         'private' => env('JWT_PRIVATE_KEY'), // 私钥，例如：'file:///path/to/private/key'
+
+        /**
+         * 你的私钥的密码。不需要密码可以不用设置
+         */
+        'passphrase' => env('JWT_PASSPHRASE'),
     ],
 
     'ttl' => env('JWT_TTL', 7200), // token过期时间，单位为秒
 
+    /**
+     * 支持的对称算法：HS256、HS384、HS512
+     * 支持的非对称算法：RS256、RS384、RS512、ES256、ES384、ES512
+     */
     'alg' => env('JWT_ALG', 'HS256'), // jwt的hearder加密算法
 
     /**
-     * 支持的算法
+     * jwt使用到的缓存前缀
+     * 建议使用独立的redis做缓存，这样比较好做分布式
      */
-    'supported_algs' => [
-        'HS256' => 'Lcobucci\JWT\Signer\Hmac\Sha256',
-        'HS384' => 'Lcobucci\JWT\Signer\Hmac\Sha384',
-        'HS512' => 'Lcobucci\JWT\Signer\Hmac\Sha512',
-        'ES256' => 'Lcobucci\JWT\Signer\Ecdsa\Sha256',
-        'ES384' => 'Lcobucci\JWT\Signer\Ecdsa\Sha384',
-        'ES512' => 'Lcobucci\JWT\Signer\Ecdsa\Sha512',
-        'RS256' => 'Lcobucci\JWT\Signer\Rsa\Sha256',
-        'RS384' => 'Lcobucci\JWT\Signer\Rsa\Sha384',
-        'RS512' => 'Lcobucci\JWT\Signer\Rsa\Sha512',
-    ],
-
-    /**
-     * 对称算法名称
-     */
-    'symmetry_algs' => [
-        'HS256',
-        'HS384',
-        'HS512'
-    ],
-
-    /**
-     * 非对称算法名称
-     */
-    'asymmetric_algs' => [
-        'RS256',
-        'RS384',
-        'RS512',
-        'ES256',
-        'ES384',
-        'ES512',
-    ],
+    'cache_prefix' => 'phper666:jwt',
 
     /**
      * 是否开启黑名单，单点登录和多点登录的注销、刷新使原token失效，必须要开启黑名单，目前黑名单缓存只支持hyperf缓存驱动
@@ -142,11 +121,9 @@ return [
     'blacklist_grace_period' => env('JWT_BLACKLIST_GRACE_PERIOD', 0),
 
     /**
-     * 黑名单缓存token时间，注意：该时间一定要设置比token过期时间要大一点，默认为1天,最好设置跟过期时间一样
+     * 签发者
      */
-    'blacklist_cache_ttl' => env('JWT_TTL', 86400),
-
-    'blacklist_prefix' => 'phper666_jwt', // 黑名单缓存的前缀
+    'issued_by' => 'phper666/jwt',
 
     /**
      * 区分不同场景的token，比如你一个项目可能会有多种类型的应用接口鉴权,下面自行定义，我只是举例子
@@ -157,30 +134,23 @@ return [
      */
     'scene' => [
         'default' => [],
+        'application' => [
+            'secret' => 'application', // 非对称加密使用字符串,请使用自己加密的字符串
+            'login_type' => 'sso', //  登录方式，sso为单点登录，mpop为多点登录
+            'sso_key' => 'uid',
+            'ttl' => 7200, // token过期时间，单位为秒
+        ],
         'application1' => [
             'secret' => 'application1', // 非对称加密使用字符串,请使用自己加密的字符串
             'login_type' => 'sso', //  登录方式，sso为单点登录，mpop为多点登录
             'sso_key' => 'uid',
             'ttl' => 7200, // token过期时间，单位为秒
-            'blacklist_cache_ttl' => env('JWT_TTL', 7200), // 黑名单缓存token时间，注意：该时间一定要设置比token过期时间要大一点，默认为100秒,最好设置跟过期时间一样
         ],
         'application2' => [
             'secret' => 'application2', // 非对称加密使用字符串,请使用自己加密的字符串
-            'login_type' => 'sso', //  登录方式，sso为单点登录，mpop为多点登录
-            'sso_key' => 'uid',
-            'ttl' => 7200, // token过期时间，单位为秒
-            'blacklist_cache_ttl' => env('JWT_TTL', 7200), // 黑名单缓存token时间，注意：该时间一定要设置比token过期时间要大一点，默认为100秒,最好设置跟过期时间一样
-        ],
-        'application3' => [
-            'secret' => 'application3', // 非对称加密使用字符串,请使用自己加密的字符串
             'login_type' => 'mppo', //  登录方式，sso为单点登录，mpop为多点登录
             'ttl' => 7200, // token过期时间，单位为秒
-            'blacklist_cache_ttl' => env('JWT_TTL', 7200), // 黑名单缓存token时间，注意：该时间一定要设置比token过期时间要大一点，默认为100秒,最好设置跟过期时间一样
         ]
-    ],
-    'model' => [ // TODO 支持直接获取某模型的数据
-        'class' => '',
-        'pk' => 'uid'
     ]
 ];
 ```
@@ -191,7 +161,7 @@ return [
 <?php
 return [
     'http' => [
-        Phper666\JWTAuth\Middleware\JWTAuthMiddleware:class
+        Phper666\JWTAuth\Middleware\JWTAuthDefaultSceneMiddleware:class
     ],
 ];
 ```
@@ -202,7 +172,7 @@ return [
 
 Router::addGroup('/v1', function () {
     Router::get('/data', 'App\Controller\IndexController@getData');
-}, ['middleware' => [Phper666\JWTAuth\Middleware\JWTAuthMiddleware::class]]);
+}, ['middleware' => [Phper666\JWTAuth\Middleware\JWTAuthDefaultSceneMiddleware::class]]);
 ```
 ##### 6、注解的路由验证
 请看官方文档：https://doc.hyperf.io/#/zh/middleware/middleware
@@ -258,7 +228,7 @@ Router::post('/login', 'App\Controller\IndexController@login');
 # 获取数据
 Router::addGroup('/v1', function () {
     Router::get('/data', 'App\Controller\IndexController@getData');
-}, ['middleware' => [Phper666\JWTAuth\Middleware\JWTAuthMiddleware::class]]);
+}, ['middleware' => [Phper666\JWTAuth\Middleware\JWTAuthDefaultSceneMiddleware::class]]);
 ```
 ##### 8、鉴权
 在需要鉴权的接口,请求该接口时在 `HTTP` 头部加入
@@ -302,6 +272,7 @@ use Hyperf\HttpServer\Annotation\Middleware;
 use Phper666\JWTAuth\Middleware\JWTAuthMiddleware;
 use Phper666\JWTAuth\Middleware\JWTAuthSceneDefaultMiddleware;
 use Phper666\JWTAuth\Middleware\JWTAuthSceneApplication1Middleware;
+use Phper666\JWTAuth\Middleware\JWTAuthSceneApplicationMiddleware;
 use Hyperf\Di\Annotation\Inject;
 use Psr\Container\ContainerInterface;
 
@@ -377,7 +348,7 @@ class IndexController
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
-    public function loginApplication1()
+    public function loginApplication()
     {
         $username = $this->request->input('username');
         $password = $this->request->input('password');
@@ -387,7 +358,7 @@ class IndexController
                 'username' => 'xx',
             ];
             // 使用application1场景登录
-            $token = $this->jwt->setScene('application1')->getToken($userData);
+            $token = $this->jwt->setScene('application')->getToken($userData);
             $data = [
                 'code' => 0,
                 'msg' => 'success',
@@ -417,7 +388,7 @@ class IndexController
                 'username' => 'xx',
             ];
             // 使用application2场景登录
-            $token = $this->jwt->setScene('application2')->getToken($userData);
+            $token = $this->jwt->setScene('application1')->getToken($userData);
             $data = [
                 'code' => 0,
                 'msg' => 'success',
@@ -447,7 +418,7 @@ class IndexController
                 'username' => 'xx',
             ];
             // 使用application3场景登录
-            $token = $this->jwt->setScene('application3')->getToken($userData);
+            $token = $this->jwt->setScene('application2')->getToken($userData);
             $data = [
                 'code' => 0,
                 'msg' => 'success',
@@ -463,7 +434,7 @@ class IndexController
 
     /**
      * @PutMapping(path="refresh")
-     * @Middleware(JWTAuthMiddleware::class)
+     * @Middleware(JWTAuthDefaultSceneMiddleware::class)
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
@@ -511,7 +482,7 @@ class IndexController
     /**
      * 只能使用application1场景值生成的token访问
      * @GetMapping(path="list1")
-     * @Middleware(JWTAuthSceneApplication1Middleware::class)
+     * @Middleware(JWTAuthSceneApplicationMiddleware::class)
      * @return \Psr\Http\Message\ResponseInterface
      */
     public function getApplication1Data()
@@ -539,3 +510,14 @@ class IndexController
 >异常为 `TokenValidException` 验证失败的异常，会抛出 `401` ,   
 >`JWTException` 异常会抛出 `400`，   
 >最好你们自己在项目异常重新返回错误信息
+
+##### 14、更新
+- 新增no_check_route来忽略对某些路由的jwt校验
+- 新增issued_by签发者
+- 去掉了model、blacklist_cache_ttl、supported_algs、symmetry_algs、asymmetric_algs配置
+
+##### 15、兼容迁移
+- 3.x版本升级到4.x，直接依赖4.x，并去掉model、blacklist_cache_ttl、supported_algs、symmetry_algs、asymmetric_algs配置
+- 在配置里面新增no_check_route、issued_by配置
+- 升级后旧的token可能会失效，旧的token，黑名单的token可能会生效，因为黑名单的缓存key有些改变
+- 请先备份好配置再升级
