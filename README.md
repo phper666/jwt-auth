@@ -35,7 +35,7 @@ composer require hyperf/di:~2.0.0
 
 ### 使用：
 ##### 1、拉取依赖 
-> 使用 `Hyperf 1.1.x` 版本,则
+> 使用 `Hyperf 2.x` 版本,则
 ```shell
 composer require phper666/jwt-auth:~4.0.0
 ``` 
