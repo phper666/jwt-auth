@@ -518,6 +518,6 @@ class IndexController
 
 ##### 15、兼容迁移
 - 3.x版本升级到4.x，直接依赖4.x，并去掉model、blacklist_cache_ttl、supported_algs、symmetry_algs、asymmetric_algs配置
-- 在配置里面新增no_check_route、issued_by配置
+- 在配置里面新增no_check_route、issued_by配置,具体情况publish/jwt.php
 - 升级后旧的token可能会失效，旧的token，黑名单的token可能会生效，因为黑名单的缓存key有些改变
 - 请先备份好配置再升级
