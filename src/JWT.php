@@ -20,6 +20,7 @@ use Lcobucci\JWT\Validation\Constraint\PermittedFor;
 use Lcobucci\JWT\Validation\Constraint\RelatedTo;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Lcobucci\JWT\Validation\Constraint\StrictValidAt;
+use Lcobucci\JWT\Encoding\ChainedFormatter;
 use Phper666\JWTAuth\Constant\JWTConstant;
 use Phper666\JWTAuth\Exception\JWTException;
 use Phper666\JWTAuth\Exception\TokenValidException;
@@ -152,7 +153,7 @@ class JWT extends AbstractJWT
         $clock = SystemClock::fromUTC();
         $now = $clock->now();
         $expiresAt = $clock->now()->modify('+' . $jwtSceneConfig['ttl'] . ' second');
-        $builder = $this->lcobucciJwtConfiguration->builder();
+        $builder = $this->lcobucciJwtConfiguration->builder(ChainedFormatter::withUnixTimestampDates());
         foreach ($claims as $k => $v) {
             $builder = $builder->withClaim($k, $v); // 自定义数据
         }
@@ -344,7 +345,6 @@ class JWT extends AbstractJWT
         unset($data[RegisteredClaims::NOT_BEFORE]);
         unset($data[RegisteredClaims::ISSUED_AT]);
         unset($data[RegisteredClaims::ID]);
-        // TODO 这里有问题，刷新的token会直接被丢到黑名单里面
         return $this->getToken($scene, $data);
     }
 
@@ -503,15 +503,15 @@ class JWT extends AbstractJWT
      * 'Lcobucci\JWT\Validation\Constraint\LooseValidAt'
      * @return array
      */
-    protected function validationConstraints(DataSet $claims, Configuration $configuration) {
-
+    protected function validationConstraints(DataSet $claims, Configuration $configuration)
+    {
         $clock = SystemClock::fromUTC();
         $validationConstraints = [
             new IdentifiedBy($claims->get(RegisteredClaims::ID)),
             new IssuedBy($claims->get(RegisteredClaims::ISSUER)),
             new LooseValidAt($clock),
             new StrictValidAt($clock),
-            new SignedWith($configuration->signer(), $configuration->signingKey())
+            new SignedWith($configuration->signer(), $configuration->verificationKey())
         ];
         if ($claims->get(RegisteredClaims::AUDIENCE) != null) {
             $validationConstraints[] = new PermittedFor($claims->get(RegisteredClaims::AUDIENCE));
