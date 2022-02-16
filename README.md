@@ -2,7 +2,7 @@
 ### 采用基于https://github.com/lcobucci/jwt/tree/3.3 进行封装。
 ### 黑名单的设置参考了这篇文章https://learnku.com/articles/17883
 ### 注意：
-1、只支持php >= 7.4版本，如果php <= 7.4，请使用3.x版本  
+1、只支持php >= 7.4版本，如果php < 7.4，请使用3.x版本  
 2、支持多应用单点登录、多应用多点登录   
 3、如有建议欢迎给我邮件，562405704@qq.com  
 4、hyperf请使用2.x版本以上
