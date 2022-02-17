@@ -47,7 +47,7 @@ class JWTAuthMiddleware implements MiddlewareInterface
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         // 判断是否为noCheckRoute
-        $path = $request->getUri();
+        $path = $request->getUri()->getPath();
         $method = $request->getMethod();
         if ($this->jwt->matchRoute(null, $method, $path)) {
             return $handler->handle($request);
