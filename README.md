@@ -54,7 +54,7 @@ php bin/hyperf.php vendor:publish phper666/jwt-auth
 <?php
 return [
     /**
-     * 不需要检查的路由，如果使用jwt提供的默认中间件，可以对某些不用做检验的路由进行配置，例如登录、退出等
+     * 不需要检查的路由，如果使用jwt提供的默认中间件，可以对某些不用做检验的路由进行配置，例如登录等
      * 具体的逻辑可以效仿JWT提供的默认中间件
      * [
      *      ["GET", "/index/test"],
