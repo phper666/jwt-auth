@@ -54,7 +54,7 @@ php bin/hyperf.php vendor:publish phper666/jwt-auth
 <?php
 return [
     /**
-     * 不需要检查的路由，如果使用jwt提供的默认中间件，可以对某些不用做检验的路由进行配置，例如登录等
+     * 不需要检查的路由，如果使用jwt提供的默认中间件，可以对某些不用做检验的路由进行配置，例如登录、退出等
      * 具体的逻辑可以效仿JWT提供的默认中间件
      * [
      *      ["GET", "/index/test"],
@@ -197,13 +197,13 @@ class IndexController extends Controller
                 'username' => 'xx',
             ];
             // 使用默认场景登录
-            $token = $this->jwt->setScene('default')->getToken($userData);
+            $token = $this->jwt->getToken('default', $userData);
             $data = [
                 'code' => 0,
                 'msg' => 'success',
                 'data' => [
-                    'token' => $token,
-                    'exp' => $this->jwt->getTTL(),
+                    'token' => $token->toString(),
+                    'exp' => $this->jwt->getTTL($token->toString()),
                 ]
             ];
             return $this->response->json($data);
@@ -259,6 +259,7 @@ Authorization  Bearer token
 ##### 10、例子文件
 ```php
 <?php
+
 declare(strict_types=1);
 namespace App\Controller;
 use Hyperf\HttpServer\Annotation\DeleteMapping;
@@ -270,10 +271,12 @@ use Hyperf\HttpServer\Contract\ResponseInterface;
 use Phper666\JWTAuth\JWT;
 use Hyperf\HttpServer\Annotation\Middleware;
 use Phper666\JWTAuth\Middleware\JWTAuthMiddleware;
-use Phper666\JWTAuth\Middleware\JWTAuthSceneDefaultMiddleware;
-use Phper666\JWTAuth\Middleware\JWTAuthSceneApplication1Middleware;
-use Phper666\JWTAuth\Middleware\JWTAuthSceneApplicationMiddleware;
+use Phper666\JWTAuth\Middleware\JWTAuthDefaultSceneMiddleware;
+use Phper666\JWTAuth\Middleware\JWTAuthApplicationSceneMiddleware;
+use Phper666\JWTAuth\Middleware\JWTAuthApplication1SceneMiddleware;
+use Phper666\JWTAuth\Middleware\JWTAuthApplication2SceneMiddleware;
 use Hyperf\Di\Annotation\Inject;
+use Phper666\JWTAuth\Util\JWTUtil;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -328,13 +331,13 @@ class IndexController
                 'username' => 'xx',
             ];
             // 使用默认场景登录
-            $token = $this->jwt->setScene('default')->getToken($userData);
+            $token = $this->jwt->getToken('default', $userData);
             $data = [
                 'code' => 0,
                 'msg' => 'success',
                 'data' => [
-                    'token' => $token,
-                    'exp' => $this->jwt->getTTL(),
+                    'token' => $token->toString(),
+                    'exp' => $this->jwt->getTTL($token->toString()),
                 ]
             ];
             return $this->response->json($data);
@@ -344,7 +347,7 @@ class IndexController
 
     /**
      * 模拟登录
-     * @PostMapping(path="login1")
+     * @PostMapping(path="login_application")
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
@@ -358,13 +361,13 @@ class IndexController
                 'username' => 'xx',
             ];
             // 使用application1场景登录
-            $token = $this->jwt->setScene('application')->getToken($userData);
+            $token = $this->jwt->getToken('application', $userData);
             $data = [
                 'code' => 0,
                 'msg' => 'success',
                 'data' => [
-                    'token' => $token,
-                    'exp' => $this->jwt->getTTL(),
+                    'token' => $token->toString(),
+                    'exp' => $this->jwt->getTTL($token->toString()),
                 ]
             ];
             return $this->response->json($data);
@@ -374,7 +377,37 @@ class IndexController
 
     /**
      * 模拟登录
-     * @PostMapping(path="login2")
+     * @PostMapping(path="login_application1")
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
+    public function loginApplication1()
+    {
+        $username = $this->request->input('username');
+        $password = $this->request->input('password');
+        if ($username && $password) {
+            $userData = [
+                'uid' => 1, // 如果使用单点登录，必须存在配置文件中的sso_key的值，一般设置为用户的id
+                'username' => 'xx',
+            ];
+            // 使用application2场景登录
+            $token = $this->jwt->getToken('application1', $userData);
+            $data = [
+                'code' => 0,
+                'msg' => 'success',
+                'data' => [
+                    'token' => $token->toString(),
+                    'exp' => $this->jwt->getTTL($token->toString()),
+                ]
+            ];
+            return $this->response->json($data);
+        }
+        return $this->response->json(['code' => 0, 'msg' => '登录失败', 'data' => []]);
+    }
+
+    /**
+     * 模拟登录
+     * @PostMapping(path="login_application2")
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
@@ -387,44 +420,14 @@ class IndexController
                 'uid' => 1, // 如果使用单点登录，必须存在配置文件中的sso_key的值，一般设置为用户的id
                 'username' => 'xx',
             ];
-            // 使用application2场景登录
-            $token = $this->jwt->setScene('application1')->getToken($userData);
-            $data = [
-                'code' => 0,
-                'msg' => 'success',
-                'data' => [
-                    'token' => $token,
-                    'exp' => $this->jwt->getTTL(),
-                ]
-            ];
-            return $this->response->json($data);
-        }
-        return $this->response->json(['code' => 0, 'msg' => '登录失败', 'data' => []]);
-    }
-
-    /**
-     * 模拟登录
-     * @PostMapping(path="login3")
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Psr\SimpleCache\InvalidArgumentException
-     */
-    public function loginApplication3()
-    {
-        $username = $this->request->input('username');
-        $password = $this->request->input('password');
-        if ($username && $password) {
-            $userData = [
-                'uid' => 1, // 如果使用单点登录，必须存在配置文件中的sso_key的值，一般设置为用户的id
-                'username' => 'xx',
-            ];
             // 使用application3场景登录
-            $token = $this->jwt->setScene('application2')->getToken($userData);
+            $token = $this->jwt->getToken('application2', $userData);
             $data = [
                 'code' => 0,
                 'msg' => 'success',
                 'data' => [
-                    'token' => $token,
-                    'exp' => $this->jwt->getTTL(),
+                    'token' => $token->toString(),
+                    'exp' => $this->jwt->getTTL($token->toString()),
                 ]
             ];
             return $this->response->json($data);
@@ -433,6 +436,8 @@ class IndexController
     }
 
     /**
+     * default 场景的刷新token
+     *
      * @PutMapping(path="refresh")
      * @Middleware(JWTAuthDefaultSceneMiddleware::class)
      * @return \Psr\Http\Message\ResponseInterface
@@ -445,16 +450,18 @@ class IndexController
             'code' => 0,
             'msg' => 'success',
             'data' => [
-                'token' => (string)$token,
-                'exp' => $this->jwt->getTTL(),
+                'token' => $token->toString(),
+                'exp' => $this->jwt->getTTL($token->toString()),
             ]
         ];
         return $this->response->json($data);
     }
 
     /**
+     * default 场景的删除token
+     *
      * @DeleteMapping(path="logout")
-     * @Middleware(JWTAuthMiddleware::class)
+     * @Middleware(JWTAuthDefaultSceneMiddleware::class)
      * @return bool
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
@@ -466,7 +473,7 @@ class IndexController
     /**
      * 只能使用default场景值生成的token访问
      * @GetMapping(path="list")
-     * @Middleware(JWTAuthSceneDefaultMiddleware::class)
+     * @Middleware(JWTAuthDefaultSceneMiddleware::class)
      * @return \Psr\Http\Message\ResponseInterface
      */
     public function getDefaultData()
@@ -474,15 +481,31 @@ class IndexController
         $data = [
             'code' => 0,
             'msg' => 'success',
-            'data' => $this->jwt->getParserData()
+            'data' => JWTUtil::getParserData($this->request)
+        ];
+        return $this->response->json($data);
+    }
+
+    /**
+     * 只能使用application场景值生成的token访问
+     * @GetMapping(path="list_application")
+     * @Middleware(JWTAuthApplicationSceneMiddleware::class)
+     * @return \Psr\Http\Message\ResponseInterface
+     */
+    public function getApplicationData()
+    {
+        $data = [
+            'code' => 0,
+            'msg' => 'success',
+            'data' => JWTUtil::getParserData($this->request)
         ];
         return $this->response->json($data);
     }
 
     /**
      * 只能使用application1场景值生成的token访问
-     * @GetMapping(path="list1")
-     * @Middleware(JWTAuthSceneApplicationMiddleware::class)
+     * @GetMapping(path="list_application1")
+     * @Middleware(JWTAuthApplication1SceneMiddleware::class)
      * @return \Psr\Http\Message\ResponseInterface
      */
     public function getApplication1Data()
@@ -490,16 +513,33 @@ class IndexController
         $data = [
             'code' => 0,
             'msg' => 'success',
-            'data' => $this->jwt->getParserData()
+            'data' => JWTUtil::getParserData($this->request)
+        ];
+        return $this->response->json($data);
+    }
+
+    /**
+     * 只能使用application2场景值生成的token访问
+     * @GetMapping(path="list_application2")
+     * @Middleware(JWTAuthApplication2SceneMiddleware::class)
+     * @return \Psr\Http\Message\ResponseInterface
+     */
+    public function getApplication2Data()
+    {
+        $data = [
+            'code' => 0,
+            'msg' => 'success',
+            'data' => JWTUtil::getParserData($this->request)
         ];
         return $this->response->json($data);
     }
 }
+
 ```
 ##### 11、获取解析后的 token 数据
-提供了一个方法     `getParserData` 来获取解析后的 token 数据。
-例如：`$this->jwt->getParserData()`
-还提供了一个工具类，\Phper666\JWTAuth\Util\JWTUtil,里面也有getParserData   
+提供了一个 `getParserData` 来获取解析后的 token 数据。
+例如：`JWTUtil::getParserData($this->request)`
+
 ##### 12、如何支持每个场景生成的token不能互相访问各个应用
 具体你可以查看Phper666\JWTAuth\Middleware\JWTAuthSceneDefaultMiddleware和Phper666\JWTAuth\Middleware\JWTAuthSceneApplication1Middleware这两个中间件，根据这两个中间件你可以编写自己的中间件来支持每个场景生成的token不能互相访问各个应用   
 
