@@ -6,7 +6,7 @@ declare(strict_types=1);
  * Date: 2021/12/1
  * Time: 1:34 下午
  */
-namespace Phper666\JWTAuth;
+namespace Phper666\JWTAuth\Interface;
 
 use Lcobucci\JWT\Token\Plain;
 
