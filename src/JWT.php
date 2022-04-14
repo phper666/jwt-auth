@@ -141,7 +141,7 @@ class JWT extends AbstractJWT
         $loginType = $jwtSceneConfig['login_type'];
         $ssoKey = $jwtSceneConfig['sso_key'];
         $issuedBy = $jwtSceneConfig[RegisteredClaims::ISSUER] ?? 'phper666/jwt';
-        if ($loginType == 'mpop') { // 多点登录,场景值加上一个唯一id
+        if ($loginType == JWTConstant::MPOP) { // 多点登录,场景值加上一个唯一id
             $uniqid = uniqid($this->getScene() . '_', true);
         } else { // 单点登录
             if (empty($claims[$ssoKey])) {
@@ -167,7 +167,11 @@ class JWT extends AbstractJWT
             ->canOnlyBeUsedAfter($now)
             // Configures the expiration time of the token (exp claim) 到期时间
             ->expiresAt($expiresAt);
-        return $builder->getToken($this->lcobucciJwtConfiguration->signer(), $this->lcobucciJwtConfiguration->signingKey());
+        $token = $builder->getToken($this->lcobucciJwtConfiguration->signer(), $this->lcobucciJwtConfiguration->signingKey());
+        if ($loginType == JWTConstant::SSO) {
+            $this->addTokenBlack($token, true);
+        }
+        return $token;
     }
 
     /**
@@ -195,14 +199,13 @@ class JWT extends AbstractJWT
         $token = $this->tokenToPlain($token);
         $this->initConfiguration($this->getSceneByTokenPlain($token));
 
-        $sceneConfig = $this->getSceneConfigByToken($token);
         $constraints = $this->validationConstraints($token->claims(), $this->lcobucciJwtConfiguration);
         if (!$this->lcobucciJwtConfiguration->validator()->validate($token, ...$constraints)) {
             throw new TokenValidException('Token authentication does not pass', 400);
         }
 
         // 验证token是否存在黑名单
-        if ($sceneConfig['blacklist_enabled'] && $this->hasTokenBlack($token)) {
+        if ($this->hasTokenBlack($token)) {
             throw new TokenValidException('Token authentication does not pass', 400);
         }
 
@@ -266,13 +269,10 @@ class JWT extends AbstractJWT
 
             if ($sceneConfig['login_type'] == JWTConstant::SSO) {
                 // 签发时间
-                $iatTime = $claims->get(RegisteredClaims::ISSUED_AT);
-                if (!is_numeric($iatTime)) {
-                    $iatTime = $iatTime->getTimestamp();
-                }
+                $iatTime = TimeUtil::getCarbonTimeByTokenTime($claims->get(RegisteredClaims::ISSUED_AT))->getTimestamp();
                 if (!empty($cacheValue['valid_until']) && !empty($iatTime)) {
-                    // 这里为什么要大于等于0，因为在刷新token时，缓存时间跟签发时间可能一致，详细请看刷新token方法
-                    return !(($iatTime - $cacheValue['valid_until']) >= 0);
+                    // 当前token的签发时间小于等于缓存的签发时间，则证明当前token无效
+                    return $iatTime <= $cacheValue['valid_until'];
                 }
             }
         }
@@ -284,40 +284,61 @@ class JWT extends AbstractJWT
      * 把token加入到黑名单中
      *
      * @param Token $token
+     * @param bool $addByCreateTokenMethod
      * @return mixed
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
-    public function addTokenBlack(Plain $token): bool
+    public function addTokenBlack(Plain $token, bool $addByCreateTokenMethod = false): bool
     {
         $sceneConfig = $this->getSceneConfigByToken($token);
         $claims = $token->claims();
         if ($sceneConfig['blacklist_enabled']) {
             $cacheKey = $this->getCacheKey($sceneConfig, $claims->get(RegisteredClaims::ID));
-            // 单点登录没有宽限时间，直接失效
-            $blacklistGracePeriod = 0;
             if ($sceneConfig['login_type'] == JWTConstant::MPOP) {
                 $blacklistGracePeriod = $sceneConfig['blacklist_grace_period'];
+                $iatTime = TimeUtil::getCarbonTimeByTokenTime($claims->get(RegisteredClaims::ISSUED_AT));
+                $validUntil = $iatTime->addSeconds($blacklistGracePeriod)->getTimestamp();
+            } else {
+                /**
+                 * 为什么要取当前的时间戳？
+                 * 是为了在单点登录下，让这个时间前当前用户生成的token都失效，可以把这个用户在多个端都踢下线
+                 */
+                $validUntil = TimeUtil::now()->subSeconds(1)->getTimestamp();
             }
-            $expTime = $claims->get(RegisteredClaims::EXPIRATION_TIME);
-            if (!is_numeric($expTime)) {
-                $expTime = $expTime->getTimestamp();
-            }
-
-            $validUntil = TimeUtil::now()->addSeconds($blacklistGracePeriod)->getTimestamp();
-            $expTime = TimeUtil::timestamp($expTime);
-            $nowTime = TimeUtil::now();
 
             /**
              * 缓存时间取当前时间跟jwt过期时间的差值，单位秒
              */
-            $tokenCacheTime = $expTime->max($nowTime)->diffInSeconds();
-            return $this->cache->set(
-                $cacheKey,
-                ['valid_until' => $validUntil],
-                $tokenCacheTime
-            );
+            $tokenCacheTime = $this->getTokenCacheTime($claims);
+            if ($tokenCacheTime > 0) {
+                return $this->cache->set(
+                    $cacheKey,
+                    ['valid_until' => $validUntil],
+                    $tokenCacheTime
+                );
+            }
         }
         return false;
+    }
+
+    /**
+     * 获取token缓存时间，根据token的过期时间跟当前时间的差值来做缓存时间
+     *
+     * @param DataSet $claims
+     * @return int
+     */
+    private function getTokenCacheTime(DataSet $claims): int
+    {
+        $expTime = TimeUtil::getCarbonTimeByTokenTime($claims->get(RegisteredClaims::EXPIRATION_TIME));
+        $nowTime = TimeUtil::now();
+        // 优化，如果当前时间大于过期时间，则证明这个jwt token已经失效了，没有必要缓存了
+        // 如果当前时间小于等于过期时间，则缓存时间为两个的差值
+        if ($nowTime->lte($expTime)) {
+            // 加1秒防止临界时间缓存问题
+            return $expTime->diffInSeconds($nowTime) + 1;
+        }
+
+        return 0;
     }
 
     /**
@@ -362,8 +383,7 @@ class JWT extends AbstractJWT
         }
 
         $token = $this->tokenToPlain($token);
-        $this->addTokenBlack($token);
-        return true;
+        return $this->addTokenBlack($token);
     }
 
     /**
@@ -380,10 +400,9 @@ class JWT extends AbstractJWT
 
         $nowTime = TimeUtil::now();
         $expTime = $this->tokenToPlain($token)->claims()->get(RegisteredClaims::EXPIRATION_TIME, $nowTime);
-        if (!is_numeric($expTime)) {
-            $expTime = $expTime->getTimestamp();
-        }
-        return TimeUtil::now()->setTimestamp($expTime)->max($nowTime)->diffInSeconds();
+
+        $expTime = TimeUtil::getCarbonTimeByTokenTime($expTime);
+        return $nowTime->max($expTime)->diffInSeconds();
     }
 
     /**
