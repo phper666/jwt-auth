@@ -270,7 +270,6 @@ use Hyperf\HttpServer\Contract\RequestInterface;
 use Hyperf\HttpServer\Contract\ResponseInterface;
 use Phper666\JWTAuth\JWT;
 use Hyperf\HttpServer\Annotation\Middleware;
-use Phper666\JWTAuth\Middleware\JWTAuthMiddleware;
 use Phper666\JWTAuth\Middleware\JWTAuthDefaultSceneMiddleware;
 use Phper666\JWTAuth\Middleware\JWTAuthApplicationSceneMiddleware;
 use Phper666\JWTAuth\Middleware\JWTAuthApplication1SceneMiddleware;
@@ -317,7 +316,7 @@ class IndexController
 
     /**
      * 模拟登录
-     * @PostMapping(path="login")
+     * @PostMapping(path="login_default")
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
@@ -356,18 +355,32 @@ class IndexController
         $username = $this->request->input('username');
         $password = $this->request->input('password');
         if ($username && $password) {
-            $userData = [
+            $userData1 = [
                 'uid' => 1, // 如果使用单点登录，必须存在配置文件中的sso_key的值，一般设置为用户的id
                 'username' => 'xx',
             ];
-            // 使用application1场景登录
-            $token = $this->jwt->getToken('application', $userData);
+            // 使用application2场景登录
+            $token1 = $this->jwt->getToken('application1', $userData1);
+            $userData2 = [
+                'uid' => 2, // 如果使用单点登录，必须存在配置文件中的sso_key的值，一般设置为用户的id
+                'username' => 'xx',
+            ];
+            // 使用application2场景登录
+            $token2 = $this->jwt->getToken('application1', $userData2);
             $data = [
                 'code' => 0,
                 'msg' => 'success',
                 'data' => [
-                    'token' => $token->toString(),
-                    'exp' => $this->jwt->getTTL($token->toString()),
+                    [
+                        'token' => $token1->toString(),
+                        'exp' => $this->jwt->getTTL($token1->toString()),
+                        'dynamic_exp' => $this->jwt->getTokenDynamicCacheTime($token1->toString())
+                    ],
+                    [
+                        'token' => $token2->toString(),
+                        'exp' => $this->jwt->getTTL($token2->toString()),
+                        'dynamic_exp' => $this->jwt->getTokenDynamicCacheTime($token2->toString())
+                    ]
                 ]
             ];
             return $this->response->json($data);
@@ -386,18 +399,32 @@ class IndexController
         $username = $this->request->input('username');
         $password = $this->request->input('password');
         if ($username && $password) {
-            $userData = [
+            $userData1 = [
                 'uid' => 1, // 如果使用单点登录，必须存在配置文件中的sso_key的值，一般设置为用户的id
                 'username' => 'xx',
             ];
             // 使用application2场景登录
-            $token = $this->jwt->getToken('application1', $userData);
+            $token1 = $this->jwt->getToken('application1', $userData1);
+            $userData2 = [
+                'uid' => 2, // 如果使用单点登录，必须存在配置文件中的sso_key的值，一般设置为用户的id
+                'username' => 'xx',
+            ];
+            // 使用application2场景登录
+            $token2 = $this->jwt->getToken('application1', $userData2);
             $data = [
                 'code' => 0,
                 'msg' => 'success',
                 'data' => [
-                    'token' => $token->toString(),
-                    'exp' => $this->jwt->getTTL($token->toString()),
+                    [
+                        'token' => $token1->toString(),
+                        'exp' => $this->jwt->getTTL($token1->toString()),
+                        'dynamic_exp' => $this->jwt->getTokenDynamicCacheTime($token1->toString())
+                    ],
+                    [
+                        'token' => $token2->toString(),
+                        'exp' => $this->jwt->getTTL($token2->toString()),
+                        'dynamic_exp' => $this->jwt->getTokenDynamicCacheTime($token2->toString())
+                    ]
                 ]
             ];
             return $this->response->json($data);
@@ -420,8 +447,8 @@ class IndexController
                 'uid' => 1, // 如果使用单点登录，必须存在配置文件中的sso_key的值，一般设置为用户的id
                 'username' => 'xx',
             ];
-            // 使用application3场景登录
-            $token = $this->jwt->getToken('application2', $userData);
+            // 使用默认场景登录
+            $token = $this->jwt->getToken('default', $userData);
             $data = [
                 'code' => 0,
                 'msg' => 'success',
@@ -438,12 +465,78 @@ class IndexController
     /**
      * default 场景的刷新token
      *
-     * @PutMapping(path="refresh")
+     * @PutMapping(path="refresh_default")
      * @Middleware(JWTAuthDefaultSceneMiddleware::class)
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
-    public function refreshToken()
+    public function refreshDefaultToken()
+    {
+        $token = $this->jwt->refreshToken();
+        $data = [
+            'code' => 0,
+            'msg' => 'success',
+            'data' => [
+                'token' => $token->toString(),
+                'exp' => $this->jwt->getTTL($token->toString()),
+            ]
+        ];
+        return $this->response->json($data);
+    }
+
+    /**
+     * application 场景的刷新token
+     *
+     * @PutMapping(path="refresh_application")
+     * @Middleware(JWTAuthApplicationSceneMiddleware::class)
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
+    public function refreshApplicationToken()
+    {
+        $token = $this->jwt->refreshToken();
+        $data = [
+            'code' => 0,
+            'msg' => 'success',
+            'data' => [
+                'token' => $token->toString(),
+                'exp' => $this->jwt->getTTL($token->toString()),
+            ]
+        ];
+        return $this->response->json($data);
+    }
+
+    /**
+     * application1 场景的刷新token
+     *
+     * @PutMapping(path="refresh_application1")
+     * @Middleware(JWTAuthApplication1SceneMiddleware::class)
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
+    public function refreshApplication1Token()
+    {
+        $token = $this->jwt->refreshToken();
+        $data = [
+            'code' => 0,
+            'msg' => 'success',
+            'data' => [
+                'token' => $token->toString(),
+                'exp' => $this->jwt->getTTL($token->toString()),
+            ]
+        ];
+        return $this->response->json($data);
+    }
+
+    /**
+     * application2 场景的刷新token
+     *
+     * @PutMapping(path="refresh_application2")
+     * @Middleware(JWTAuthApplication2SceneMiddleware::class)
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
+    public function refreshApplication2Token()
     {
         $token = $this->jwt->refreshToken();
         $data = [
@@ -460,19 +553,58 @@ class IndexController
     /**
      * default 场景的删除token
      *
-     * @DeleteMapping(path="logout")
+     * @DeleteMapping(path="logout_default")
      * @Middleware(JWTAuthDefaultSceneMiddleware::class)
      * @return bool
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
-    public function logout()
+    public function logout_default()
+    {
+        return $this->jwt->logout();
+    }
+
+    /**
+     * application 场景的删除token
+     *
+     * @DeleteMapping(path="logout_application")
+     * @Middleware(JWTAuthApplicationSceneMiddleware::class)
+     * @return bool
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
+    public function logout_application()
+    {
+        return $this->jwt->logout();
+    }
+
+    /**
+     * application1 场景的删除token
+     *
+     * @DeleteMapping(path="logout_application1")
+     * @Middleware(JWTAuthApplication1SceneMiddleware::class)
+     * @return bool
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
+    public function logout_application1()
+    {
+        return $this->jwt->logout();
+    }
+
+    /**
+     * application2 场景的删除token
+     *
+     * @DeleteMapping(path="logout_application2")
+     * @Middleware(JWTAuthApplication2SceneMiddleware::class)
+     * @return bool
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
+    public function logout_application2()
     {
         return $this->jwt->logout();
     }
 
     /**
      * 只能使用default场景值生成的token访问
-     * @GetMapping(path="list")
+     * @GetMapping(path="list_default")
      * @Middleware(JWTAuthDefaultSceneMiddleware::class)
      * @return \Psr\Http\Message\ResponseInterface
      */
@@ -481,7 +613,10 @@ class IndexController
         $data = [
             'code' => 0,
             'msg' => 'success',
-            'data' => JWTUtil::getParserData($this->request)
+            'data' => [
+                'dynamic_exp' => $this->jwt->getTokenDynamicCacheTime(JWTUtil::getToken($this->request)),
+                'jwt_claims' => JWTUtil::getParserData($this->request)
+            ]
         ];
         return $this->response->json($data);
     }
@@ -497,7 +632,10 @@ class IndexController
         $data = [
             'code' => 0,
             'msg' => 'success',
-            'data' => JWTUtil::getParserData($this->request)
+            'data' => [
+                'dynamic_exp' => $this->jwt->getTokenDynamicCacheTime(JWTUtil::getToken($this->request)),
+                'jwt_claims' => JWTUtil::getParserData($this->request)
+            ]
         ];
         return $this->response->json($data);
     }
@@ -513,7 +651,10 @@ class IndexController
         $data = [
             'code' => 0,
             'msg' => 'success',
-            'data' => JWTUtil::getParserData($this->request)
+            'data' => [
+                'dynamic_exp' => $this->jwt->getTokenDynamicCacheTime(JWTUtil::getToken($this->request)),
+                'jwt_claims' => JWTUtil::getParserData($this->request)
+            ]
         ];
         return $this->response->json($data);
     }
@@ -529,7 +670,10 @@ class IndexController
         $data = [
             'code' => 0,
             'msg' => 'success',
-            'data' => JWTUtil::getParserData($this->request)
+            'data' => [
+                'dynamic_exp' => $this->jwt->getTokenDynamicCacheTime(JWTUtil::getToken($this->request)),
+                'jwt_claims' => JWTUtil::getParserData($this->request)
+            ]
         ];
         return $this->response->json($data);
     }

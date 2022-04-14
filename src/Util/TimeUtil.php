@@ -59,4 +59,20 @@ class TimeUtil
     {
         return static::timestamp($timestamp)->subSeconds($leeway)->isFuture();
     }
+
+    /**
+     * 获取carbon实例
+     *
+     * @param $time
+     * @return Carbon
+     */
+    public static function getCarbonTimeByTokenTime($tokenTime): Carbon
+    {
+        $timestamp = $tokenTime;
+        if (!is_numeric($tokenTime)) {
+            $timestamp = $tokenTime->getTimestamp();
+        }
+
+        return self::timestamp($timestamp);
+    }
 }
