@@ -6,12 +6,14 @@ namespace Phper666\JWTAuth;
 use Hyperf\Contract\ConfigInterface;
 use Hyperf\HttpServer\Contract\RequestInterface;
 use Lcobucci\Clock\SystemClock;
+use Lcobucci\JWT\Builder;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Token;
 use Lcobucci\JWT\Token\DataSet;
 use Lcobucci\JWT\Token\Plain;
+use Lcobucci\JWT\Token\RegisteredClaimGiven;
 use Lcobucci\JWT\Token\RegisteredClaims;
 use Lcobucci\JWT\Validation\Constraint\IdentifiedBy;
 use Lcobucci\JWT\Validation\Constraint\IssuedBy;
@@ -153,12 +155,23 @@ class JWT extends AbstractJWT
         $clock = SystemClock::fromUTC();
         $now = $clock->now();
         $expiresAt = $clock->now()->modify('+' . $jwtSceneConfig['ttl'] . ' second');
-        $builder = $this->lcobucciJwtConfiguration->builder(ChainedFormatter::withUnixTimestampDates());
+        $builder = $this->lcobucciJwtConfiguration->builder(ChainedFormatter::withUnixTimestampDates())->issuedBy($issuedBy);
         foreach ($claims as $k => $v) {
+            if ($k == RegisteredClaims::SUBJECT) {
+                $builder = $builder->relatedTo($v);
+                continue;
+            }
+            if ($k == RegisteredClaims::AUDIENCE) {
+                $builder = $builder->PermittedFor($v);
+                continue;
+            }
+            if ($k == RegisteredClaims::ISSUER) {
+                $builder = $builder->issuedBy($v);
+                continue;
+            }
             $builder = $builder->withClaim($k, $v); // 自定义数据
         }
         $builder = $builder
-            ->issuedBy($issuedBy)
             // Configures the id (jti claim) 设置jwt的jti
             ->identifiedBy($uniqid)
             // Configures the time that the token was issue (iat claim) 发布时间
@@ -167,6 +180,8 @@ class JWT extends AbstractJWT
             ->canOnlyBeUsedAfter($now)
             // Configures the expiration time of the token (exp claim) 到期时间
             ->expiresAt($expiresAt);
+
+
         $token = $builder->getToken($this->lcobucciJwtConfiguration->signer(), $this->lcobucciJwtConfiguration->signingKey());
         if ($loginType == JWTConstant::SSO) {
             $this->addTokenBlack($token, true);
