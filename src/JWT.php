@@ -162,7 +162,10 @@ class JWT extends AbstractJWT
                 continue;
             }
             if ($k == RegisteredClaims::AUDIENCE) {
-                $builder = $builder->PermittedFor($v);
+                if (!is_array($v)) {
+                    throw new JWTException("Aud only supports array types", 400);
+                }
+                $builder = $builder->PermittedFor(...$v);
                 continue;
             }
             if ($k == RegisteredClaims::ISSUER) {
@@ -548,7 +551,7 @@ class JWT extends AbstractJWT
             new SignedWith($configuration->signer(), $configuration->verificationKey())
         ];
         if ($claims->get(RegisteredClaims::AUDIENCE) != null) {
-            $validationConstraints[] = new PermittedFor($claims->get(RegisteredClaims::AUDIENCE));
+            $validationConstraints[] = new PermittedFor(...$claims->get(RegisteredClaims::AUDIENCE));
         }
         if ($claims->get(RegisteredClaims::SUBJECT) != null) {
             $validationConstraints[] = new RelatedTo($claims->get(RegisteredClaims::SUBJECT));

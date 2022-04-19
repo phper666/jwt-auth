@@ -1,3 +1,8 @@
+## v4.0.7
+### Fixed
+- jwt payload的aud字段只支持数组类型
+- 更新readme文档
+
 ## v4.0.6
 ### Feat
 - 新增jwt可以自定义payload的sub、iss、aud字段
