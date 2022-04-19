@@ -14,6 +14,7 @@ return [
      * 如果数组中存在["**", "/**"]，则默认所有的请求路由都不做jwt token的校验，直接放行，如果no_check_route为一个空数组，则
      * 所有的请求路由都需要做jwt token校验
      * 路由路径支持正则的写法
+     * 正则写法：["**", "/api/{name:.+}"]  支持模块化不做jwt token的校验，例如：/api/login/login
      */
     'no_check_route' => [
         ["**", "/**"],
