@@ -210,7 +210,7 @@ class JWT extends AbstractJWT
      */
     public function verifyToken(string $token): bool
     {
-        if($token == null) {
+        if(!$token) {
             $token = JWTUtil::getToken($this->request);
         }
 
@@ -237,7 +237,7 @@ class JWT extends AbstractJWT
      */
     public function verifyTokenAndScene(string $scene, string $token): bool
     {
-        if($token == null) {
+        if(!$token) {
             $token = JWTUtil::getToken($this->request);
         }
         $plainToken = $this->tokenToPlain($token);
@@ -365,9 +365,9 @@ class JWT extends AbstractJWT
      * @return Token
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
-    public function refreshToken(string $token = null): Plain
+    public function refreshToken(string $token = ''): Plain
     {
-        if($token == null) {
+        if(!$token) {
             $token = JWTUtil::getToken($this->request);
         }
 
@@ -394,9 +394,9 @@ class JWT extends AbstractJWT
      * @return bool
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
-    public function logout(string $token = null): bool
+    public function logout(string $token = ''): bool
     {
-        if($token == null) {
+        if(!$token) {
             $token = JWTUtil::getToken($this->request);
         }
 
@@ -410,9 +410,9 @@ class JWT extends AbstractJWT
      * @param string|null $token
      * @return int|mixed
      */
-    public function getTokenDynamicCacheTime(string $token = null): int
+    public function getTokenDynamicCacheTime(string $token = ''): int
     {
-        if($token == null) {
+        if(!$token) {
             throw new JWTException("Missing token");
         }
 
@@ -429,9 +429,9 @@ class JWT extends AbstractJWT
      * @param string $token
      * @return array
      */
-    public function getClaimsByToken(string $token = null): array
+    public function getClaimsByToken(string $token = ''): array
     {
-        if($token == null) {
+        if(!$token) {
             $token = JWTUtil::getToken($this->request);
         }
 
@@ -440,7 +440,7 @@ class JWT extends AbstractJWT
 
     public function tokenToPlain(string $token): Plain
     {
-        if($token == null) {
+        if(!$token) {
             $token = JWTUtil::getToken($this->request);
         }
 
@@ -468,9 +468,9 @@ class JWT extends AbstractJWT
      *
      * @return mixed
      */
-    public function getCacheTTL(string $token = null): int
+    public function getCacheTTL(string $token = ''): int
     {
-        if($token == null) {
+        if(!$token) {
             $token = JWTUtil::getToken($this->request);
         }
 
@@ -483,7 +483,7 @@ class JWT extends AbstractJWT
 
     public function getTTL(string $token): int
     {
-        if($token == null) {
+        if(!$token) {
             $token = JWTUtil::getToken($this->request);
         }
 
@@ -494,7 +494,7 @@ class JWT extends AbstractJWT
 
     public function getSceneByToken(string $token): bool
     {
-        if($token == null) {
+        if(!$token) {
             $token = JWTUtil::getToken($this->request);
         }
         $token = $this->tokenToPlain($token);

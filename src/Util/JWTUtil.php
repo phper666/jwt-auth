@@ -33,7 +33,7 @@ class JWTUtil
     /**
      * 获取jwt token
      * @param ServerRequestInterface $request
-     * @return array
+     * @return string
      */
     public static function getToken(ServerRequestInterface $request)
     {
@@ -58,9 +58,9 @@ class JWTUtil
      * 处理token
      * @param string $token
      * @param string $prefix
-     * @return bool|mixed|string
+     * @return string
      */
-    public static function handleToken(string $token, string $prefix = 'Bearer')
+    public static function handleToken(string $token, string $prefix = 'Bearer') :string
     {
         if (strlen($token) > 0) {
             $token = ucfirst($token);
@@ -70,7 +70,7 @@ class JWTUtil
                 return $token;
             }
         }
-        return false;
+        return '';
     }
 
     /**

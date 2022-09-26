@@ -58,7 +58,7 @@ class JWTAuthApplication1SceneMiddleware implements MiddlewareInterface
             throw new JWTException('Missing token', 400);
         }
         $token = JWTUtil::handleToken($token);
-        if ($token !== false && $this->jwt->verifyTokenAndScene('application1', $token)) {
+        if ($token && $this->jwt->verifyTokenAndScene('application1', $token)) {
             return $handler->handle($request);
         }
 

@@ -126,5 +126,5 @@ abstract class AbstractJWT
      *
      * @return int
      */
-    abstract function getCacheTTL(string $token = null): int;
+    abstract function getCacheTTL(string $token = ''): int;
 }

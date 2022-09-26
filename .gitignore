@@ -1,3 +1,5 @@
 /vendor/
 *.cache
 *.log
+.idea
+.vscode
