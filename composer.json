@@ -12,6 +12,11 @@
             "email": "562405704@qq.com",
             "homepage": "https://github.com/phper666/jwt-auth",
             "role": "Developer"
+        },{
+            "name": "Wang Tengfei",
+            "email": "776095293@qq.com",
+            "homepage": "https://github.com/tengfei31/jwt-auth",
+            "role": "Developer"
         }
     ],
     "description": "jwt-auth Component",

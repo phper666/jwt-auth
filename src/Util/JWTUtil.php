@@ -35,7 +35,7 @@ class JWTUtil
      * @param ServerRequestInterface $request
      * @return string
      */
-    public static function getToken(ServerRequestInterface $request)
+    public static function getToken(ServerRequestInterface $request) :string
     {
         $token = $request->getHeaderLine('Authorization') ?? '';
         $token = self::handleToken($token);
@@ -47,7 +47,7 @@ class JWTUtil
      * @param ServerRequestInterface $request
      * @return array
      */
-    public static function getParserData(ServerRequestInterface $request)
+    public static function getParserData(ServerRequestInterface $request) :array
     {
         $token = $request->getHeaderLine('Authorization') ?? '';
         $token = self::handleToken($token);
@@ -74,9 +74,10 @@ class JWTUtil
     }
 
     /**
+     * @param Decoder|null $decoder
      * @return Parser
      */
-    public static function getParser(Decoder $decoder = null): Parser
+    public static function getParser(?Decoder $decoder = null): Parser
     {
         if ($decoder == null) {
             return new Parser(new JoseEncoder());

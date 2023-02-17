@@ -39,7 +39,7 @@ use ReflectionClass;
  */
 class JWT extends AbstractJWT
 {
-    private $supportAlgs = [
+    private array $supportAlgs = [
         // 非对称算法
         'RS256' => 'Lcobucci\JWT\Signer\Rsa\Sha256',
         'RS384' => 'Lcobucci\JWT\Signer\Rsa\Sha384',
@@ -57,9 +57,9 @@ class JWT extends AbstractJWT
     /**
      * @var string
      */
-    private $jwtClaimScene = 'jwt_scene';
+    private string $jwtClaimScene = 'jwt_scene';
 
-    private $scene = 'default';
+    private string $scene = 'default';
 
     /**
      * @var RequestInterface|mixed
@@ -107,7 +107,8 @@ class JWT extends AbstractJWT
      * @param string $scene
      * @return $this
      */
-    protected function initConfiguration(string $scene) {
+    protected function initConfiguration(string $scene) :self
+    {
         $this->setScene($scene);
         $jwtSceneConfig = $this->getJwtSceneConfig($scene);
         $useAlgsClass = $this->supportAlgs[$jwtSceneConfig['alg']];
@@ -129,8 +130,9 @@ class JWT extends AbstractJWT
     /**
      * 生成token
      *
+     * @param string $scene
      * @param array $claims
-     * @return Token|string
+     * @return Plain
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     public function getToken(string $scene, array $claims): Plain
@@ -197,7 +199,8 @@ class JWT extends AbstractJWT
      *
      * @return mixed
      */
-    public function getJwtSceneConfig(string $scene = null) {
+    public function getJwtSceneConfig(?string $scene = null)
+    {
         if ($scene == null) {
             return $this->jwtConfig[$this->getScene()];
         }
@@ -252,6 +255,7 @@ class JWT extends AbstractJWT
     /**
      * 检查当前路由是否需要对jwt进行校验
      *
+     * @param string|null $scene
      * @param string $requestMethod
      * @param string $requestPath
      * @return bool
@@ -270,7 +274,7 @@ class JWT extends AbstractJWT
     /**
      * 判断token是否已经加入黑名单
      *
-     * @param $claims
+     * @param Plain $token
      * @return bool
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
@@ -301,7 +305,7 @@ class JWT extends AbstractJWT
     /**
      * 把token加入到黑名单中
      *
-     * @param Token $token
+     * @param Plain $token
      * @param bool $addByCreateTokenMethod
      * @return mixed
      * @throws \Psr\SimpleCache\InvalidArgumentException
@@ -390,7 +394,7 @@ class JWT extends AbstractJWT
     /**
      * 让token失效
      *
-     * @param string|null $token
+     * @param string $token
      * @return bool
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
@@ -407,8 +411,8 @@ class JWT extends AbstractJWT
     /**
      * 获取token动态有效时间
      *
-     * @param string|null $token
-     * @return int|mixed
+     * @param string $token
+     * @return int
      */
     public function getTokenDynamicCacheTime(string $token = ''): int
     {
@@ -538,9 +542,11 @@ class JWT extends AbstractJWT
      * 'Lcobucci\JWT\Validation\Constraint\SignedWith',
      * 'Lcobucci\JWT\Validation\Constraint\StrictValidAt',
      * 'Lcobucci\JWT\Validation\Constraint\LooseValidAt'
+     * @param DataSet $claims
+     * @param Configuration $configuration
      * @return array
      */
-    protected function validationConstraints(DataSet $claims, Configuration $configuration)
+    protected function validationConstraints(DataSet $claims, Configuration $configuration) :array
     {
         $clock = SystemClock::fromUTC();
         $validationConstraints = [
@@ -563,7 +569,7 @@ class JWT extends AbstractJWT
      * 通过token获取当前场景的配置
      *
      * @param Plain $token
-     * @return string
+     * @return array
      */
     protected function getSceneConfigByToken(Plain $token): array
     {
@@ -571,7 +577,8 @@ class JWT extends AbstractJWT
         return $this->jwtConfig[$scene];
     }
 
-    protected function getSceneByClaims(DataSet $claims) {
+    protected function getSceneByClaims(DataSet $claims)
+    {
         return $claims->get($this->jwtClaimScene, $this->getScene());
     }
 
