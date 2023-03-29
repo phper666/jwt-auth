@@ -17,7 +17,7 @@ class JWTCommand extends HyperfCommand
      *
      * @var string
      */
-    protected $name = 'jwt:publish';
+    protected ?string $name = 'jwt:publish';
 
     public function handle()
     {
