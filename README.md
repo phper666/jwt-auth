@@ -42,10 +42,6 @@ composer require phper666/jwt-auth:~4.0.0
 
 ##### 2、发布配置
 ```shell
-php bin/hyperf.php jwt:publish --config
-```
-或者
-```shell
 php bin/hyperf.php vendor:publish phper666/jwt-auth
 ```
 ##### 3、jwt配置
