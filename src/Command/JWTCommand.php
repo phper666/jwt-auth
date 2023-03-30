@@ -12,12 +12,10 @@ use Symfony\Component\Console\Input\InputOption;
  */
 class JWTCommand extends HyperfCommand
 {
-    /**
-     * 执行的命令行
-     *
-     * @var string
-     */
-    protected ?string $name = 'jwt:publish';
+    public function __construct()
+    {
+        parent::__construct('jwt:publish');
+    }
 
     public function handle()
     {
