@@ -443,8 +443,11 @@ class JWT extends AbstractJWT
         if($token == null) {
             $token = JWTUtil::getToken($this->request);
         }
-
-        return JWTUtil::getParser()->parse($token);
+        try{
+            return JWTUtil::getParser()->parse($token);
+        }catch (\Exception $e) {
+            throw new JWTException('Jwt token interpretation error. Please provide the correct jwt token and parse the error information: ' . $e->getMessage(), 400);
+        }
     }
 
     public function setScene(string $scene = 'default'): JWT
