@@ -152,7 +152,7 @@ class JWT extends AbstractJWT
             $uniqid = $this->getScene() . "_" . $claims[$ssoKey];
         }
 
-        $clock = SystemClock::fromUTC();
+        $clock = SystemClock::fromSystemTimezone();
         $now = $clock->now();
         $expiresAt = $clock->now()->modify('+' . $jwtSceneConfig['ttl'] . ' second');
         $builder = $this->lcobucciJwtConfiguration->builder(ChainedFormatter::withUnixTimestampDates())->issuedBy($issuedBy);
@@ -183,7 +183,6 @@ class JWT extends AbstractJWT
             ->canOnlyBeUsedAfter($now)
             // Configures the expiration time of the token (exp claim) 到期时间
             ->expiresAt($expiresAt);
-
 
         $token = $builder->getToken($this->lcobucciJwtConfiguration->signer(), $this->lcobucciJwtConfiguration->signingKey());
         if ($loginType == JWTConstant::SSO) {
@@ -310,18 +309,26 @@ class JWT extends AbstractJWT
     {
         $sceneConfig = $this->getSceneConfigByToken($token);
         $claims = $token->claims();
+
         if ($sceneConfig['blacklist_enabled']) {
+            $iatTime = TimeUtil::getCarbonTimeByTokenTime($claims->get(RegisteredClaims::ISSUED_AT));
             $cacheKey = $this->getCacheKey($sceneConfig, $claims->get(RegisteredClaims::ID));
             if ($sceneConfig['login_type'] == JWTConstant::MPOP) {
                 $blacklistGracePeriod = $sceneConfig['blacklist_grace_period'];
-                $iatTime = TimeUtil::getCarbonTimeByTokenTime($claims->get(RegisteredClaims::ISSUED_AT));
                 $validUntil = $iatTime->addSeconds($blacklistGracePeriod)->getTimestamp();
             } else {
                 /**
                  * 为什么要取当前的时间戳？
                  * 是为了在单点登录下，让这个时间前当前用户生成的token都失效，可以把这个用户在多个端都踢下线
                  */
-                $validUntil = TimeUtil::now()->subSeconds(1)->getTimestamp();
+                $validUntil = TimeUtil::now()->subSeconds()->getTimestamp();
+                // fix: SSO模式签发时间可能会跟黑名单缓存校验时间一致,因为创建token是先签发，后加入黑名单，所以就算获取当前时间-1秒，也还有可能一致
+                // 处理方式是：
+                // 如果是创建token，则使用token的签发时间-1秒为黑名单缓存校验时间
+                // 如果是刷新token，则使用当前时间-1秒为黑名单校验缓存时间(刷新token是先加入加入黑名单，后生成token)
+                if ($addByCreateTokenMethod) {
+                    $validUntil = $iatTime->subSeconds()->getTimestamp();
+                }
             }
 
             /**
@@ -370,7 +377,6 @@ class JWT extends AbstractJWT
         if($token == null) {
             $token = JWTUtil::getToken($this->request);
         }
-
         $token = $this->tokenToPlain($token);
 
         // TODO emm....这里是否要做失败处理?
@@ -545,7 +551,7 @@ class JWT extends AbstractJWT
      */
     protected function validationConstraints(DataSet $claims, Configuration $configuration)
     {
-        $clock = SystemClock::fromUTC();
+        $clock = SystemClock::fromSystemTimezone();
         $validationConstraints = [
             new IdentifiedBy($claims->get(RegisteredClaims::ID)),
             new IssuedBy($claims->get(RegisteredClaims::ISSUER)),
