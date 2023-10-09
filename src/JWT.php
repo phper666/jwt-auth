@@ -501,13 +501,18 @@ class JWT extends AbstractJWT
         return (int)$sceneConfig['ttl'];
     }
 
-    public function getSceneByToken(string $token): bool
+    public function getSceneByToken(string $token): string
     {
         if($token == null) {
             $token = JWTUtil::getToken($this->request);
         }
         $token = $this->tokenToPlain($token);
-        $scene = $this->getSceneByTokenPlain($token);
+        return $this->getSceneByTokenPlain($token);
+    }
+    
+    public function getConfigByToken(string $token): array
+    {
+        $scene = $this->getSceneByToken($token);
         return $this->jwtConfig[$scene];
     }
 
