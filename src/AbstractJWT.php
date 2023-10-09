@@ -52,9 +52,17 @@ abstract class AbstractJWT
      * 获取jwt中的场景值
      *
      * @param string $token
-     * @return bool
+     * @return string
      */
-    abstract function getSceneByToken(string $token): bool;
+    abstract function getSceneByToken(string $token): string;
+    
+    /**
+     * 获取jwt的配置信息
+     *
+     * @param string $token
+     * @return array
+     */
+    abstract function getConfigByToken(string $token): array;
 
     /**
      * 刷新jwt token
