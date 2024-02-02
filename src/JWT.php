@@ -88,7 +88,7 @@ class JWT extends AbstractJWT
 
     public function __construct()
     {
-        $config = hyperf_make(ConfigInterface::class);
+        $config = make(ConfigInterface::class);
         $jwtConfig = $config->get(JWTConstant::CONFIG_NAME, []);
         $scenes = $jwtConfig['scene'];
         foreach ($scenes as $key => $scene) {
@@ -98,9 +98,9 @@ class JWT extends AbstractJWT
         }
 
         $this->jwtConfig = $config->get(JWTConstant::CONFIG_NAME, []);
-        $this->cache = hyperf_make(CacheInterface::class);
-        $this->request = hyperf_make(RequestInterface::class);
-        $this->pathMatch = hyperf_make(PathMatch::class);
+        $this->cache = make(CacheInterface::class);
+        $this->request = make(RequestInterface::class);
+        $this->pathMatch = make(PathMatch::class);
     }
 
     /**

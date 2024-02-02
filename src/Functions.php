@@ -9,17 +9,28 @@ declare(strict_types=1);
 
 namespace Phper666\JWTAuth;
 
-use Hyperf\Context\ApplicationContext;
-
-function hyperf_make(string $name, array $parameters = [])
-{
-    if (ApplicationContext::hasContainer()) {
-        /** @var \Hyperf\Di\Container $container */
-        $container = ApplicationContext::getContainer();
-        if (method_exists($container, 'make')) {
-            return $container->make($name, $parameters);
+if (!function_exists('make')) {
+    function make(string $name, array $parameters = [])
+    {
+        if (class_exists('\Hyperf\Context\ApplicationContext')) {
+            if (\Hyperf\Context\ApplicationContext::hasContainer()) {
+                /** @var \Hyperf\Di\Container $container */
+                $container = \Hyperf\Context\ApplicationContext::getContainer();
+                if (method_exists($container, 'make')) {
+                    return $container->make($name, $parameters);
+                }
+            }
+        } elseif (class_exists('\Hyperf\Utils\ApplicationContext')) {
+            if (\Hyperf\Utils\ApplicationContext::hasContainer()) {
+                /** @var \Hyperf\Di\Container $container */
+                $container = \Hyperf\Utils\ApplicationContext::getContainer();
+                if (method_exists($container, 'make')) {
+                    return $container->make($name, $parameters);
+                }
+            }
         }
+
+        $parameters = array_values($parameters);
+        return new $name(...$parameters);
     }
-    $parameters = array_values($parameters);
-    return new $name(...$parameters);
 }
