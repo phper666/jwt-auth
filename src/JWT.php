@@ -196,7 +196,7 @@ class JWT extends AbstractJWT
      *
      * @return mixed
      */
-    public function getJwtSceneConfig(string $scene = null) {
+    public function getJwtSceneConfig(string $scene = null): array {
         if ($scene == null) {
             return $this->jwtConfig[$this->getScene()];
         }
@@ -501,10 +501,11 @@ class JWT extends AbstractJWT
         return (int)$sceneConfig['ttl'];
     }
 
-    public function getSceneByToken(string $token): bool
+    public function getSceneByToken(string $token): array
     {
         if($token == null) {
             $token = JWTUtil::getToken($this->request);
+            if (!$token) return [];
         }
         $token = $this->tokenToPlain($token);
         $scene = $this->getSceneByTokenPlain($token);
@@ -572,7 +573,7 @@ class JWT extends AbstractJWT
      * 通过token获取当前场景的配置
      *
      * @param Plain $token
-     * @return string
+     * @return array
      */
     protected function getSceneConfigByToken(Plain $token): array
     {

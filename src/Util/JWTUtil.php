@@ -25,7 +25,7 @@ class JWTUtil
      * @param $claims
      * @return mixed
      */
-    public static function claimsToArray(DataSet $claims)
+    public static function claimsToArray(DataSet $claims): array
     {
         return $claims->all();
     }
@@ -38,8 +38,7 @@ class JWTUtil
     public static function getToken(ServerRequestInterface $request)
     {
         $token = $request->getHeaderLine('Authorization') ?? '';
-        $token = self::handleToken($token);
-        return $token;
+        return self::handleToken($token);
     }
 
     /**
@@ -47,7 +46,7 @@ class JWTUtil
      * @param ServerRequestInterface $request
      * @return array
      */
-    public static function getParserData(ServerRequestInterface $request)
+    public static function getParserData(ServerRequestInterface $request): array
     {
         $token = $request->getHeaderLine('Authorization') ?? '';
         $token = self::handleToken($token);
