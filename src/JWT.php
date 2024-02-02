@@ -88,7 +88,7 @@ class JWT extends AbstractJWT
 
     public function __construct()
     {
-        $config = make(ConfigInterface::class);
+        $config = hyperf_make(ConfigInterface::class);
         $jwtConfig = $config->get(JWTConstant::CONFIG_NAME, []);
         $scenes = $jwtConfig['scene'];
         foreach ($scenes as $key => $scene) {
@@ -98,9 +98,9 @@ class JWT extends AbstractJWT
         }
 
         $this->jwtConfig = $config->get(JWTConstant::CONFIG_NAME, []);
-        $this->cache = make(CacheInterface::class);
-        $this->request = make(RequestInterface::class);
-        $this->pathMatch = make(PathMatch::class);
+        $this->cache = hyperf_make(CacheInterface::class);
+        $this->request = hyperf_make(RequestInterface::class);
+        $this->pathMatch = hyperf_make(PathMatch::class);
     }
 
     /**
@@ -196,7 +196,7 @@ class JWT extends AbstractJWT
      *
      * @return mixed
      */
-    public function getJwtSceneConfig(string $scene = null) {
+    public function getJwtSceneConfig(string $scene = null): array {
         if ($scene == null) {
             return $this->jwtConfig[$this->getScene()];
         }
@@ -501,10 +501,11 @@ class JWT extends AbstractJWT
         return (int)$sceneConfig['ttl'];
     }
 
-    public function getSceneByToken(string $token): bool
+    public function getSceneByToken(string $token): array
     {
         if($token == null) {
             $token = JWTUtil::getToken($this->request);
+            if (!$token) return [];
         }
         $token = $this->tokenToPlain($token);
         $scene = $this->getSceneByTokenPlain($token);
@@ -572,7 +573,7 @@ class JWT extends AbstractJWT
      * 通过token获取当前场景的配置
      *
      * @param Plain $token
-     * @return string
+     * @return array
      */
     protected function getSceneConfigByToken(Plain $token): array
     {

@@ -18,7 +18,10 @@
     "autoload": {
         "psr-4": {
             "Phper666\\JWTAuth\\": "src/"
-        }
+        },
+        "files": [
+            "src/Functions.php"
+        ]
     },
     "autoload-dev": {},
     "require": {
